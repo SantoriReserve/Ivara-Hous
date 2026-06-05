@@ -1,7 +1,9 @@
 import { z } from "zod";
 import type { AssessmentAnswers } from "@/lib/assessment";
 
-export const ASSESSMENT_SCHEMA_VERSION = "1.0.0";
+export const ASSESSMENT_SCHEMA_VERSION = "1.0.0" as const;
+
+export type AssessmentSchemaVersion = typeof ASSESSMENT_SCHEMA_VERSION;
 
 const readinessLevelSchema = z.enum(["low", "moderate", "high"]);
 
@@ -105,7 +107,7 @@ export type AssessmentAnalysis = z.infer<typeof assessmentAnalysisSchema>;
 export type AssessmentSubmission = {
   assessmentId: string;
   submittedAt: string;
-  schemaVersion: typeof ASSESSMENT_SCHEMA_VERSION;
+  schemaVersion: AssessmentSchemaVersion;
   answers: AssessmentAnswers;
   source: "creator-development-assessment";
 };

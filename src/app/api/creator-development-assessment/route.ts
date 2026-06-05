@@ -3,6 +3,7 @@ import { saveAssessmentResult } from "@/lib/assessment-repository";
 import {
   ASSESSMENT_SCHEMA_VERSION,
   assessmentAnswersSchema,
+  type AssessmentRecord,
   type AssessmentResult,
 } from "@/lib/assessment-schema";
 import { generateAssessmentAnalysis } from "@/lib/openai-assessment";
@@ -21,14 +22,14 @@ export async function POST(request: Request) {
     const assessmentId = crypto.randomUUID();
     const submittedAt = new Date().toISOString();
 
-    const record = {
+    const record: AssessmentRecord = {
       assessmentId,
       submittedAt,
       schemaVersion: ASSESSMENT_SCHEMA_VERSION,
       answers: parsed.data,
-      source: "creator-development-assessment" as const,
+      source: "creator-development-assessment",
       analysis,
-      paymentStatus: "free" as const,
+      paymentStatus: "free",
     };
 
     await saveAssessmentResult(record);
