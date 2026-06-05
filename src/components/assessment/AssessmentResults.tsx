@@ -5,15 +5,27 @@ import { ROUTES } from "@/lib/constants";
 import {
   SCORE_LABELS,
   type AssessmentAnswers,
+  type AssessmentPreview,
   type AssessmentScores,
+  type ScoreExplanations,
 } from "@/lib/assessment";
 
 type AssessmentResultsProps = {
   scores: AssessmentScores;
+  scoreExplanations: ScoreExplanations;
+  preview: AssessmentPreview;
   answers: Partial<AssessmentAnswers>;
 };
 
-function ScoreBar({ label, value }: { label: string; value: number }) {
+function ScoreBar({
+  label,
+  value,
+  explanation,
+}: {
+  label: string;
+  value: number;
+  explanation: string;
+}) {
   return (
     <div className="space-y-4">
       <div className="flex items-end justify-between gap-6">
@@ -28,11 +40,36 @@ function ScoreBar({ label, value }: { label: string; value: number }) {
           style={{ width: `${value}%` }}
         />
       </div>
+      <p className="font-sans text-sm leading-[1.75] text-gray-mid">{explanation}</p>
     </div>
   );
 }
 
-export function AssessmentResults({ scores, answers }: AssessmentResultsProps) {
+function InsightList({ title, items }: { title: string; items: string[] }) {
+  return (
+    <div>
+      <p className="luxury-label mb-5">{title}</p>
+      <ul className="space-y-4">
+        {items.map((item) => (
+          <li
+            key={item}
+            className="flex items-start gap-4 font-sans text-sm text-black"
+          >
+            <span className="mt-2.5 h-px w-6 shrink-0 bg-black" />
+            {item}
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+export function AssessmentResults({
+  scores,
+  scoreExplanations,
+  preview,
+  answers,
+}: AssessmentResultsProps) {
   const entries = Object.entries(scores) as [keyof AssessmentScores, number][];
 
   return (
@@ -49,14 +86,56 @@ export function AssessmentResults({ scores, answers }: AssessmentResultsProps) {
           </p>
         )}
         <p className="mt-8 max-w-xl text-sm leading-[1.75] text-gray-mid">
-          These scores are placeholder previews. Your full personalized analysis
-          will be available with the full Creator Development Assessment and 40-day action plan.
+          {preview.recommendedNextStep}
         </p>
+        <div className="mt-10 grid gap-8 sm:grid-cols-2">
+          <div>
+            <p className="luxury-label mb-3">Current Creator Stage</p>
+            <p className="font-sans text-sm text-black">{preview.currentCreatorStage}</p>
+          </div>
+          <div>
+            <p className="luxury-label mb-3">Creator Archetype</p>
+            <p className="font-sans text-sm text-black">{preview.creatorArchetype}</p>
+          </div>
+          <div>
+            <p className="luxury-label mb-3">Ideal Partnership Tier</p>
+            <p className="font-sans text-sm text-black">{preview.idealPartnershipTier}</p>
+          </div>
+          <div>
+            <p className="luxury-label mb-3">Estimated Timeline To First Hosted Stay</p>
+            <p className="font-sans text-sm text-black">
+              {preview.estimatedTimelineToFirstHostedStay}
+            </p>
+          </div>
+        </div>
+        <div className="mt-12 grid gap-12 border-t border-black/10 pt-12 sm:grid-cols-2">
+          <InsightList title="Top 3 Strengths" items={preview.topStrengths} />
+          <InsightList title="Top 3 Growth Opportunities" items={preview.growthOpportunities} />
+        </div>
+        <div className="mt-12 border-t border-black/10 pt-12">
+          <p className="luxury-label mb-5">Priority Focus Areas</p>
+          <ul className="space-y-4">
+            {preview.priorityFocusAreas.map((item) => (
+              <li
+                key={item}
+                className="flex items-start gap-4 font-sans text-sm text-black"
+              >
+                <span className="mt-2.5 h-px w-6 shrink-0 bg-black" />
+                {item}
+              </li>
+            ))}
+          </ul>
+        </div>
       </div>
 
       <div className="space-y-12 border border-black/10 bg-gray-light p-10 sm:p-14">
         {entries.map(([key, value]) => (
-          <ScoreBar key={key} label={SCORE_LABELS[key]} value={value} />
+          <ScoreBar
+            key={key}
+            label={SCORE_LABELS[key]}
+            value={value}
+            explanation={scoreExplanations[key]}
+          />
         ))}
       </div>
 

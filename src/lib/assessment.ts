@@ -18,14 +18,6 @@ export type AssessmentAnswers = {
   desiredOutcome: string;
 };
 
-export type AssessmentScores = {
-  creatorReadiness: number;
-  portfolioStrength: number;
-  contentQuality: number;
-  partnershipPotential: number;
-  luxuryTravelAlignment: number;
-};
-
 export const ASSESSMENT_STEPS = [
   {
     id: "profile",
@@ -59,26 +51,20 @@ export const ASSESSMENT_STEPS = [
   },
 ] as const;
 
-/** Placeholder scoring until OpenAI integration */
-export function calculatePlaceholderScores(
-  answers: Partial<AssessmentAnswers>
-): AssessmentScores {
-  const seed = Object.values(answers).join("").length;
-  const base = 55 + (seed % 25);
-
-  return {
-    creatorReadiness: Math.min(95, base + 8),
-    portfolioStrength: Math.min(92, base + 3),
-    contentQuality: Math.min(90, base + 5),
-    partnershipPotential: Math.min(94, base + 10),
-    luxuryTravelAlignment: Math.min(96, base + 12),
-  };
-}
-
-export const SCORE_LABELS: Record<keyof AssessmentScores, string> = {
+export const SCORE_LABELS = {
   creatorReadiness: "Creator Readiness Score",
   portfolioStrength: "Portfolio Strength",
   contentQuality: "Content Quality",
   partnershipPotential: "Partnership Potential",
   luxuryTravelAlignment: "Luxury Travel Alignment",
-};
+} as const;
+
+export type {
+  AssessmentAnalysis,
+  AssessmentPreview,
+  AssessmentRecord,
+  AssessmentResult,
+  AssessmentScores,
+  DevelopmentFoundation,
+  ScoreExplanations,
+} from "@/lib/assessment-schema";

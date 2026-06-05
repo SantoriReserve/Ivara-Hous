@@ -8,8 +8,7 @@ import { Button } from "@/components/ui/Button";
 import {
   ASSESSMENT_STEPS,
   type AssessmentAnswers,
-  calculatePlaceholderScores,
-  type AssessmentScores,
+  type AssessmentResult,
 } from "@/lib/assessment";
 
 const INITIAL: Partial<AssessmentAnswers> = {};
@@ -106,8 +105,8 @@ const FIELD_CONFIG: Record<
 export function AssessmentForm() {
   const [step, setStep] = useState(0);
   const [answers, setAnswers] = useState<Partial<AssessmentAnswers>>(INITIAL);
-  const [scores, setScores] = useState<AssessmentScores | null>(null);
-  const { submit, isLoading } = useFormSubmit(
+  const [result, setResult] = useState<AssessmentResult | null>(null);
+  const { submit, error, isLoading } = useFormSubmit(
     "/api/creator-development-assessment"
   );
 
@@ -115,7 +114,7 @@ export function AssessmentForm() {
   const isLastStep = step === ASSESSMENT_STEPS.length - 1;
   const progress = ((step + 1) / ASSESSMENT_STEPS.length) * 100;
 
-  function handleStepSubmit(e: FormEvent<HTMLFormElement>) {
+  async function handleStepSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     const form = new FormData(e.currentTarget);
     const stepData = Object.fromEntries(form.entries()) as Partial<AssessmentAnswers>;
@@ -127,17 +126,25 @@ export function AssessmentForm() {
       return;
     }
 
-    const calculated = calculatePlaceholderScores(merged);
-    setScores(calculated);
-    void submit({ ...merged, scores: calculated });
+    const response = await submit(merged);
+    if (response?.result) {
+      setResult(response.result as AssessmentResult);
+    }
   }
 
   function goBack() {
     if (step > 0) setStep((s) => s - 1);
   }
 
-  if (scores) {
-    return <AssessmentResults scores={scores} answers={answers} />;
+  if (result) {
+    return (
+      <AssessmentResults
+        scores={result.analysis.scores}
+        scoreExplanations={result.analysis.scoreExplanations}
+        preview={result.analysis.preview}
+        answers={answers}
+      />
+    );
   }
 
   return (
@@ -208,6 +215,12 @@ export function AssessmentForm() {
             />
           );
         })}
+
+        {error && (
+          <p className="font-sans text-sm text-red-700" role="alert">
+            {error}
+          </p>
+        )}
 
         <div className="flex flex-col gap-5 border-t border-black/10 pt-10 sm:flex-row sm:justify-between">
           {step > 0 ? (
