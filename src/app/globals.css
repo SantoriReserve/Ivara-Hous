@@ -1,0 +1,83 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    @apply bg-white font-sans font-normal text-black antialiased;
+    font-feature-settings: "kern" 1, "liga" 1, "calt" 1;
+  }
+
+  ::selection {
+    @apply bg-black text-white;
+  }
+}
+
+@layer components {
+  .luxury-container {
+    @apply mx-auto w-full max-w-[1400px] px-6 sm:px-10 lg:px-16;
+  }
+
+  .luxury-heading {
+    @apply font-serif font-normal tracking-[-0.02em] text-black;
+  }
+
+  .luxury-label {
+    @apply font-sans text-[10px] font-medium uppercase tracking-luxury text-gray-muted;
+  }
+
+  .luxury-body {
+    @apply font-sans text-[15px] font-light leading-[1.8] tracking-[0.01em] text-gray-mid sm:text-base;
+  }
+
+  .luxury-body-lg {
+    @apply font-sans text-base font-light leading-[1.85] tracking-[0.01em] text-gray-mid sm:text-lg;
+  }
+
+  .nav-link {
+    @apply relative font-sans text-[11px] font-medium uppercase tracking-nav text-gray-mid transition-colors duration-luxury ease-luxury;
+  }
+
+  .nav-link::after {
+    @apply absolute -bottom-1 left-0 h-px w-0 bg-black transition-all duration-luxury ease-luxury content-[''];
+  }
+
+  .nav-link:hover,
+  .nav-link[data-active="true"] {
+    @apply text-black;
+  }
+
+  .nav-link:hover::after,
+  .nav-link[data-active="true"]::after {
+    @apply w-full;
+  }
+
+  .luxury-input {
+    @apply w-full border border-black/15 bg-white px-5 py-3.5 font-sans text-sm font-normal text-black transition-colors duration-luxury ease-luxury placeholder:text-gray-muted focus:border-black focus:outline-none;
+  }
+
+  .luxury-textarea {
+    @apply luxury-input min-h-[140px] resize-y leading-relaxed;
+  }
+
+  .luxury-select {
+    @apply luxury-input appearance-none bg-[length:10px] bg-[right_1.25rem_center] bg-no-repeat pr-12;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%23000000'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='1' d='M19 9l-7 7-7-7'/%3E%3C/svg%3E");
+  }
+
+  .luxury-divider {
+    @apply h-px w-full bg-black/10;
+  }
+
+  .luxury-card {
+    @apply border border-black/10 bg-white transition-colors duration-luxury ease-luxury;
+  }
+
+  .luxury-card:hover {
+    @apply border-black/25;
+  }
+}
