@@ -22,7 +22,7 @@ export function CreatorApplicationForm() {
     return (
       <FormSuccess
         title="Application Received"
-        message="Thank you for applying to the Ivara Hous creator network. Our team will review your application and respond within 5–7 business days."
+        message="Your application has been received. Our team will review your submission and contact you if there is alignment."
         onReset={reset}
       />
     );
@@ -75,7 +75,7 @@ export function CreatorApplicationForm() {
 
       {error && (
         <p className="font-sans text-sm text-red-700" role="alert">
-          {error}
+          Something went wrong. Please try again.
         </p>
       )}
 
