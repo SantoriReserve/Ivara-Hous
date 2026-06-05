@@ -56,10 +56,12 @@ export function PartnerForm() {
         as="select"
         required
         options={[
-          { value: "creator-campaigns", label: "Creator Campaigns" },
-          { value: "partnership-management", label: "Creator Partnership Management" },
-          { value: "travel-coordination", label: "Luxury Travel Coordination" },
-          { value: "hospitality-growth", label: "Hospitality Growth Partner" },
+          { value: "creator-development", label: "Creator Development System" },
+          { value: "travel-creator-roster", label: "Travel Creator Roster" },
+          { value: "creator-partnership-management", label: "Creator Partnership Management" },
+          { value: "hospitality-growth-partner", label: "Hospitality Growth Partner" },
+          { value: "luxury-travel-coordination", label: "Luxury Travel Coordination" },
+          { value: "content-creative-partnerships", label: "Content & Creative Partnerships" },
           { value: "multiple", label: "Multiple Services" },
         ]}
       />

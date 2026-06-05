@@ -4,7 +4,7 @@ import { PageHero } from "@/components/layout/PageHero";
 
 export const metadata: Metadata = {
   title: "Partner With Us",
-  description: "Partner with Ivara Hous for luxury hospitality growth and creator collaborations.",
+  description: "Partner with Ivara Hous as a Hospitality Growth Partner or for Creator Partnership Management.",
 };
 
 export default function PartnerWithUsPage() {
@@ -13,7 +13,7 @@ export default function PartnerWithUsPage() {
       <PageHero
         label="Partners"
         title="Partner With Ivara Hous"
-        description="Luxury hotels, villas, resorts, and hospitality brands — connect with our creator network, travel referrals, and strategic growth partnerships."
+        description="Luxury hotels, villas, resorts, and hospitality brands — explore Creator Partnership Management, Hospitality Growth Partner opportunities, strategic introductions, and long-term visibility."
       />
       <section className="py-section sm:py-section-lg">
         <div className="luxury-container max-w-3xl">

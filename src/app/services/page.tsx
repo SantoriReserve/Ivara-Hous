@@ -9,7 +9,7 @@ import { SERVICES } from "@/lib/services";
 export const metadata: Metadata = {
   title: "Services",
   description:
-    "Explore Ivara Hous services — creator campaigns, partnership management, luxury travel coordination, and more.",
+    "Explore Ivara Hous services — Creator Development System, Travel Creator Roster, Creator Partnership Management, Hospitality Growth Partner, Luxury Travel Coordination, and Content & Creative Partnerships.",
 };
 
 export default function ServicesPage() {
@@ -18,7 +18,7 @@ export default function ServicesPage() {
       <PageHero
         label="Services"
         title="Six Pillars of the Ivara Hous Platform"
-        description="From one-off creator campaigns to long-term hospitality growth partnerships — every service is designed for luxury, impact, and editorial excellence."
+        description="From creator development and roster opportunities to partnership management, hospitality growth, travel coordination, and creative partnerships — every service is designed for luxury, clarity, and measurable impact."
       />
 
       <section className="py-section sm:py-section-lg">
@@ -58,9 +58,29 @@ export default function ServicesPage() {
                       Take the Assessment
                     </Button>
                   )}
+                  {service.id === "travel-creator-roster" && (
+                    <Button
+                      href={ROUTES.creatorApplication}
+                      variant="outline"
+                      size="md"
+                      className="mt-10"
+                    >
+                      Apply to Join
+                    </Button>
+                  )}
+                  {service.id === "creator-partnership-management" && (
+                    <Button href={ROUTES.contact} variant="outline" size="md" className="mt-10">
+                      Learn More
+                    </Button>
+                  )}
                   {service.id === "hospitality-growth-partner" && (
                     <Button href={ROUTES.partnerWithUs} variant="outline" size="md" className="mt-10">
                       Partner With Us
+                    </Button>
+                  )}
+                  {service.id === "luxury-travel-coordination" && (
+                    <Button href={ROUTES.contact} variant="outline" size="md" className="mt-10">
+                      Plan Your Experience
                     </Button>
                   )}
                   {service.id === "content-creative-partnerships" && (

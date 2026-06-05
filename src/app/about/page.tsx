@@ -31,7 +31,7 @@ const values = [
   {
     title: "Long-Term Growth",
     description:
-      "Beyond campaigns, we build lasting relationships that drive hospitality growth and creator development.",
+      "Beyond individual partnerships, we build lasting relationships that drive hospitality growth and creator development.",
   },
 ];
 
@@ -65,10 +65,11 @@ export default function AboutPage() {
                 partnerships. Creative professionals lacked a curated roster.
               </p>
               <p className="luxury-body mt-8">
-                Today, Ivara Hous unifies these worlds — offering creator
-                campaigns, partnership management, travel coordination,
-                hospitality growth, creative partnerships, and AI-powered
-                creator development under one exclusive luxury travel agency.
+                Today, Ivara Hous unifies these worlds — offering the Creator
+                Development System, Travel Creator Roster, Creator Partnership
+                Management, Hospitality Growth Partner, Luxury Travel
+                Coordination, and Content & Creative Partnerships under one
+                luxury travel agency.
               </p>
             </div>
           </div>

@@ -50,7 +50,7 @@ export function AssessmentResults({ scores, answers }: AssessmentResultsProps) {
         )}
         <p className="mt-8 max-w-xl text-sm leading-[1.75] text-gray-mid">
           These scores are placeholder previews. Your full personalized analysis
-          will be available with the 40-Day Creator Development Plan.
+          will be available with the full Creator Development Assessment and 40-day action plan.
         </p>
       </div>
 
@@ -63,15 +63,15 @@ export function AssessmentResults({ scores, answers }: AssessmentResultsProps) {
       <div className="border border-black bg-black p-12 text-center text-white sm:p-16">
         <p className="luxury-label mb-5 text-white/50">Next Step</p>
         <h3 className="font-serif text-2xl font-normal tracking-tight sm:text-3xl">
-          Unlock Your Personalized 40-Day Creator Development Plan
+          Unlock Your 40-Day Creator Development Plan
         </h3>
         <p className="mx-auto mt-6 max-w-lg text-sm leading-[1.75] text-white/65">
-          AI-powered strategy, portfolio guidance, partnership positioning, and
-          weekly milestones tailored to your assessment results.
+          Personalized content strategy, portfolio guidance, outreach resources,
+          and daily action steps tailored to your assessment results.
         </p>
         <p className="mt-8 font-serif text-4xl font-normal tracking-tight">$95</p>
         <Button href={ROUTES.contact} variant="secondary" size="lg" className="mt-10">
-          Unlock Your Personalized 40-Day Creator Development Plan — $95
+          Unlock Your 40-Day Creator Development Plan — $95
         </Button>
         <p className="mt-8 font-sans text-[10px] uppercase tracking-nav text-white/40">
           Secure checkout via Stripe — coming soon. Contact us to reserve your plan.

@@ -23,9 +23,9 @@ export function CreatorNetwork() {
           </div>
           <div className="lg:order-2">
             <SectionHeading
-              label="Creator Network"
-              title="Travel Creators Shaping Luxury Storytelling"
-              description="Our creator roster spans lifestyle, travel, hospitality, and luxury niches — delivering editorial-quality content for the world's most exclusive properties."
+              label="Travel Creator Roster"
+              title="Paid Partnerships Without Fees or Exclusivity"
+              description="Join the Ivara Hous Creator Roster for paid travel partnerships, hosted stays, and luxury hospitality campaigns — with full independence, no membership fees, and support from outreach through deliverables."
             />
             <div className="mt-12 flex flex-col gap-4 sm:flex-row">
               <Button href={ROUTES.creatorApplication} variant="primary" size="lg">

@@ -5,10 +5,10 @@ import { ROUTES } from "@/lib/constants";
 import { SITE_IMAGES } from "@/lib/images";
 
 const highlights = [
-  "Creator Readiness Score",
-  "Portfolio & Content Analysis",
-  "Partnership Potential Insights",
-  "40-Day Personalized Development Plan — $95",
+  "Free personalized assessment preview",
+  "Positioning & brand strategy",
+  "40-day customized growth plan",
+  "Personalized creator dashboard",
 ];
 
 export function AssessmentPreview() {
@@ -24,8 +24,8 @@ export function AssessmentPreview() {
           <div>
             <SectionHeading
               label="Creator Development"
-              title="Discover Your Creator Readiness"
-              description="A multi-step assessment delivering personalized scores across portfolio strength, content quality, partnership potential, and luxury travel alignment."
+              title="Creator Development System"
+              description="An AI-powered program helping aspiring travel creators build professional portfolios, strengthen positioning, and become partnership-ready — beginning with a strategic assessment and complimentary evaluation preview."
             />
             <ul className="mt-12 space-y-5">
               {highlights.map((item) => (

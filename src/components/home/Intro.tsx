@@ -24,9 +24,9 @@ export function Intro() {
               development, and luxury travel coordination.
             </p>
             <p className="luxury-body mt-6">
-              From villa campaigns in the Mediterranean to creator retreats in
-              Bali, every partnership is designed with intention, exclusivity,
-              and editorial excellence.
+              From emerging creators building partnership-ready portfolios to
+              properties seeking curated creator relationships, every service is
+              designed with clarity, professionalism, and long-term value.
             </p>
           </div>
         </div>

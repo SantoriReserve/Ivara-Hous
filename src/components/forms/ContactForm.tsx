@@ -40,7 +40,8 @@ export function ContactForm() {
           { value: "general", label: "General Inquiry" },
           { value: "creator", label: "Creator" },
           { value: "partner", label: "Partnership" },
-          { value: "travel", label: "Travel Coordination" },
+          { value: "partnership-management", label: "Creator Partnership Management" },
+          { value: "travel", label: "Luxury Travel Coordination" },
           { value: "press", label: "Press / Media" },
         ]}
       />

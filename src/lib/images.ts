@@ -54,7 +54,12 @@ export const SITE_IMAGES = {
 } as const satisfies Record<string, ImageAsset>;
 
 export const SERVICE_IMAGES: Record<string, ImageAsset> = {
-  "creator-campaigns": {
+  "creator-development": {
+    src: "/images/service-creator-development.jpeg",
+    alt: "Creator development and portfolio growth in luxury travel",
+    objectPosition: "center 35%",
+  },
+  "travel-creator-roster": {
     src: "/images/service-creator-campaigns.jpeg",
     alt: "Creator campaign at a luxury coastal destination",
     objectPosition: "center 40%",
@@ -64,24 +69,19 @@ export const SERVICE_IMAGES: Record<string, ImageAsset> = {
     alt: "Ongoing creator partnership at a luxury hospitality property",
     objectPosition: "center center",
   },
-  "luxury-travel-coordination": {
-    src: "/images/service-travel-coordination.jpeg",
-    alt: "Luxury travel coordination and elevated itinerary planning",
-    objectPosition: "center center",
-  },
   "hospitality-growth-partner": {
     src: "/images/service-hospitality-growth.jpeg",
     alt: "Hospitality growth partnership at a premium luxury property",
+    objectPosition: "center center",
+  },
+  "luxury-travel-coordination": {
+    src: "/images/service-travel-coordination.jpeg",
+    alt: "Luxury travel coordination and elevated itinerary planning",
     objectPosition: "center center",
   },
   "content-creative-partnerships": {
     src: "/images/service-creative-partnerships.jpeg",
     alt: "Creative production and visual storytelling for luxury travel brands",
     objectPosition: "center center",
-  },
-  "creator-development": {
-    src: "/images/service-creator-development.jpeg",
-    alt: "Creator development and portfolio growth in luxury travel",
-    objectPosition: "center 35%",
   },
 };

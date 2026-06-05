@@ -29,7 +29,7 @@ export const FOOTER_LINKS = {
     { href: ROUTES.contact, label: "Contact" },
   ],
   creators: [
-    { href: ROUTES.creatorApplication, label: "Creator Application" },
+    { href: ROUTES.creatorApplication, label: "Travel Creator Roster" },
     { href: ROUTES.creatorDevelopment, label: "Creator Development" },
   ],
   partners: [

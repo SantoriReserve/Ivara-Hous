@@ -17,9 +17,10 @@ export function PartnerWithUs() {
               Partner With Ivara Hous
             </h2>
             <p className="luxury-body-lg mt-8">
-              Supporting luxury properties, travel brands, resorts, villas,
-              charters, and hospitality partners through creator partnerships,
-              strategic introductions, and luxury travel opportunities.
+              Supporting luxury properties, travel brands, resorts, and villas
+              through Creator Partnership Management, Hospitality Growth
+              partnerships, strategic introductions, and long-term visibility
+              across the Ivara Hous network.
             </p>
             <Button
               href={ROUTES.partnerWithUs}
