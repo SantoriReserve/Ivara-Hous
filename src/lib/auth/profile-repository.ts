@@ -5,6 +5,7 @@ export type ProfileRecord = {
   email: string;
   fullName: string;
   onboardingCompletedAt: string | null;
+  congratulationsSeenAt: string | null;
   createdAt: string;
   updatedAt: string;
 };
@@ -14,6 +15,7 @@ type ProfileRow = {
   email: string;
   full_name: string;
   onboarding_completed_at: string | null;
+  congratulations_seen_at: string | null;
   created_at: string;
   updated_at: string;
 };
@@ -24,6 +26,7 @@ function mapProfileRow(row: ProfileRow): ProfileRecord {
     email: row.email,
     fullName: row.full_name,
     onboardingCompletedAt: row.onboarding_completed_at,
+    congratulationsSeenAt: row.congratulations_seen_at,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
@@ -42,6 +45,21 @@ export async function getProfileByUserId(userId: string): Promise<ProfileRecord 
   }
 
   return data ? mapProfileRow(data as ProfileRow) : null;
+}
+
+export async function markCongratulationsSeen(userId: string): Promise<void> {
+  const supabase = getSupabaseAdmin();
+  const { error } = await supabase
+    .from("profiles")
+    .update({
+      congratulations_seen_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", userId);
+
+  if (error) {
+    throw new Error(`Failed to mark congratulations seen: ${error.message}`);
+  }
 }
 
 export async function updateProfileFullName(

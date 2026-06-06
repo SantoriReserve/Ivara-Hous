@@ -10,6 +10,8 @@ type DashboardShellProps = {
 
 const DASHBOARD_NAV = [
   { href: ROUTES.dashboard, label: "Overview" },
+  { href: ROUTES.dashboardToday, label: "Today" },
+  { href: ROUTES.dashboardPlan, label: "40-Day Plan" },
 ] as const;
 
 export function DashboardShell({ children, userEmail, userName }: DashboardShellProps) {
