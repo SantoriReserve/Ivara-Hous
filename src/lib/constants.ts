@@ -8,6 +8,8 @@ export const ROUTES = {
   services: "/services",
   creatorDevelopment: "/creator-development",
   creatorDevelopmentPlan: "/creator-development/plan",
+  creatorDevelopmentPlanSuccess: "/creator-development/plan/success",
+  creatorDevelopmentPlanCancel: "/creator-development/plan/cancel",
   creatorApplication: "/creator-application",
   partnerWithUs: "/partner-with-us",
   creativePartnerApplication: "/creative-partner-application",

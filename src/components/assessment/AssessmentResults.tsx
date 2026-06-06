@@ -11,6 +11,7 @@ import {
 } from "@/lib/assessment";
 
 type AssessmentResultsProps = {
+  assessmentId: string;
   scores: AssessmentScores;
   scoreExplanations: ScoreExplanations;
   preview: AssessmentPreview;
@@ -65,6 +66,7 @@ function InsightList({ title, items }: { title: string; items: string[] }) {
 }
 
 export function AssessmentResults({
+  assessmentId,
   scores,
   scoreExplanations,
   preview,
@@ -151,7 +153,7 @@ export function AssessmentResults({
         </p>
         <p className="mt-8 font-serif text-4xl font-normal tracking-tight">$95</p>
         <Button
-          href={ROUTES.creatorDevelopmentPlan}
+          href={`${ROUTES.creatorDevelopmentPlan}?assessmentId=${encodeURIComponent(assessmentId)}`}
           variant="secondary"
           size="lg"
           className="mt-10"

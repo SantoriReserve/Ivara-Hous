@@ -10,6 +10,7 @@ import {
   type AssessmentAnswers,
   type AssessmentResult,
 } from "@/lib/assessment";
+import { saveCreatorDevAssessmentSession } from "@/lib/creator-dev-assessment-session";
 
 const INITIAL: Partial<AssessmentAnswers> = {};
 
@@ -128,7 +129,13 @@ export function AssessmentForm() {
 
     const response = await submit(merged);
     if (response?.result) {
-      setResult(response.result as AssessmentResult);
+      const assessmentResult = response.result as AssessmentResult;
+      saveCreatorDevAssessmentSession({
+        assessmentId: assessmentResult.assessmentId,
+        customerEmail: merged.email ?? "",
+        fullName: merged.fullName ?? "",
+      });
+      setResult(assessmentResult);
     }
   }
 
@@ -139,6 +146,7 @@ export function AssessmentForm() {
   if (result) {
     return (
       <AssessmentResults
+        assessmentId={result.assessmentId}
         scores={result.analysis.scores}
         scoreExplanations={result.analysis.scoreExplanations}
         preview={result.analysis.preview}
