@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
-import type Stripe from "stripe";
 import { Button } from "@/components/ui/Button";
 import { PageHero } from "@/components/layout/PageHero";
+import { isValidCreatorDevelopmentPurchaseSession } from "@/lib/stripe-checkout-session";
 import { CREATOR_DEVELOPMENT_PLAN_PRODUCT } from "@/lib/stripe-product";
 import { getStripe } from "@/lib/stripe";
 import { ROUTES } from "@/lib/constants";
@@ -21,19 +21,6 @@ function formatAmount(amountCents: number, currency: string): string {
     style: "currency",
     currency: currency.toUpperCase(),
   }).format(amountCents / 100);
-}
-
-function isValidPurchaseSession(session: Stripe.Checkout.Session): boolean {
-  const isComplete = session.status === "complete";
-  const isValidPaymentStatus =
-    session.payment_status === "paid" ||
-    session.payment_status === "no_payment_required";
-  const currencyMatches =
-    session.currency === CREATOR_DEVELOPMENT_PLAN_PRODUCT.currency;
-  const productMatches =
-    session.metadata?.productSlug === CREATOR_DEVELOPMENT_PLAN_PRODUCT.slug;
-
-  return isComplete && isValidPaymentStatus && currencyMatches && productMatches;
 }
 
 export default async function CreatorDevelopmentPlanSuccessPage({
@@ -55,7 +42,7 @@ export default async function CreatorDevelopmentPlanSuccessPage({
     const stripe = getStripe();
     const session = await stripe.checkout.sessions.retrieve(sessionId);
 
-    if (!isValidPurchaseSession(session)) {
+    if (!isValidCreatorDevelopmentPurchaseSession(session)) {
       return (
         <ConfirmationLayout
           title="Payment Not Confirmed"
