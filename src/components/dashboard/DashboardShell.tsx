@@ -42,16 +42,16 @@ export function DashboardShell({ children, userEmail, userName }: DashboardShell
         </div>
       </div>
 
-      <div className="luxury-container grid gap-10 py-10 lg:grid-cols-[14rem_1fr] lg:py-14">
-        <aside className="border-b border-black/10 pb-6 lg:border-b-0 lg:border-r lg:pb-0 lg:pr-8">
-          <p className="luxury-label mb-4 text-gray-muted">{SITE_NAME}</p>
+      <div className="luxury-container grid gap-8 py-8 sm:gap-10 sm:py-10 lg:grid-cols-[14rem_1fr] lg:py-14">
+        <aside className="border-b border-black/10 pb-4 lg:border-b-0 lg:border-r lg:pb-0 lg:pr-8">
+          <p className="luxury-label mb-3 hidden text-gray-muted lg:mb-4 lg:block">{SITE_NAME}</p>
           <nav aria-label="Dashboard navigation">
-            <ul className="space-y-2">
+            <ul className="flex gap-4 overflow-x-auto pb-1 lg:flex-col lg:gap-2 lg:overflow-visible lg:pb-0">
               {DASHBOARD_NAV.map((item) => (
-                <li key={item.href}>
+                <li key={item.href} className="shrink-0">
                   <Link
                     href={item.href}
-                    className="block font-sans text-sm uppercase tracking-nav text-black transition-opacity hover:opacity-60"
+                    className="block whitespace-nowrap font-sans text-xs uppercase tracking-nav text-black transition-opacity hover:opacity-60 sm:text-sm"
                   >
                     {item.label}
                   </Link>
@@ -61,7 +61,7 @@ export function DashboardShell({ children, userEmail, userName }: DashboardShell
           </nav>
         </aside>
 
-        <div>{children}</div>
+        <div className="min-w-0">{children}</div>
       </div>
     </div>
   );

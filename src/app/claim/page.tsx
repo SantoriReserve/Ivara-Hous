@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { LoginForm } from "@/components/auth/LoginForm";
+import { PasswordAuthForm } from "@/components/auth/PasswordAuthForm";
 import { PageHero } from "@/components/layout/PageHero";
 import { Button } from "@/components/ui/Button";
 import { ROUTES } from "@/lib/constants";
@@ -106,17 +106,17 @@ export default async function ClaimPage({ searchParams }: ClaimPageProps) {
         <PageHero
           label="Create Account"
           title="Access Your Dashboard"
-          description="Create your account using the same email from checkout. We will send a secure sign-in link — no password required."
+          description="Create your account with the same email from checkout. You will be signed in and taken directly to your dashboard."
         />
         <section className="py-section sm:py-section-lg">
           <div className="luxury-container">
-            <LoginForm
-              nextPath={ROUTES.dashboard}
+            <PasswordAuthForm
+              mode="register"
               sessionId={sessionId}
               defaultEmail={customerEmail}
               title="Create Your Account"
-              description="Use your checkout email to receive a secure sign-in link and unlock your dashboard."
-              submitLabel="Send Account Link"
+              description="Use your checkout email and choose a password. Your dashboard will open immediately — no email confirmation required."
+              submitLabel="Create Account"
             />
             <p className="mx-auto mt-10 max-w-md text-center font-sans text-sm text-gray-mid">
               Already have an account?{" "}

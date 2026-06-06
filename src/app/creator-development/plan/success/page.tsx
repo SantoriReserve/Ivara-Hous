@@ -64,7 +64,7 @@ export default async function CreatorDevelopmentPlanSuccessPage({
       <ConfirmationLayout
         sessionId={sessionId}
         title="Purchase Confirmed"
-        description="Your 40-Day Creator Development Plan is confirmed. Create your account to access your creator dashboard."
+        description="Your 40-Day Creator Development Plan is confirmed. Create your account below to access your creator dashboard instantly."
       >
         <dl className="mx-auto mt-12 max-w-md space-y-6 text-left">
           <div>
@@ -135,20 +135,20 @@ function ConfirmationLayout({
       <section className="border-t border-black/10 bg-black py-section text-white sm:py-section-lg">
         <div className="luxury-container max-w-3xl text-center">
           {children}
-          <div className="mt-12 flex flex-col items-center justify-center gap-4 sm:flex-row">
+          <div className="mt-12 flex flex-col items-stretch justify-center gap-3 sm:flex-row sm:flex-wrap sm:items-center">
             {!error && (
-              <Button href={claimHref} variant="primary" size="lg">
+              <Button href={claimHref} variant="primary" size="lg" className="w-full sm:w-auto">
                 Create Your Account
               </Button>
             )}
-            <Button href={ROUTES.login} variant="secondary" size="lg">
-              Sign In
+            <Button href={ROUTES.login} variant="secondary" size="lg" className="w-full sm:w-auto">
+              Sign&nbsp;In
             </Button>
             <Button
               href={ROUTES.creatorDevelopmentPlan}
               variant="ghost"
               size="lg"
-              className="text-white hover:text-white/80"
+              className="w-full text-white hover:text-white/80 sm:w-auto"
             >
               Return To Plan Overview
             </Button>

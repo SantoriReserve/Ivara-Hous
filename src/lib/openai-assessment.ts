@@ -46,7 +46,8 @@ async function callOpenAI(answers: AssessmentAnswers): Promise<AssessmentAnalysi
 
   const completion = await client.chat.completions.create({
     model,
-    temperature: 0.4,
+    temperature: 0.35,
+    max_tokens: 3200,
     messages: [
       { role: "system", content: ASSESSMENT_SYSTEM_PROMPT },
       { role: "user", content: buildAssessmentUserPrompt(answers) },

@@ -9,19 +9,37 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false },
 };
 
-export default async function AccessDeniedPage() {
+type AccessDeniedPageProps = {
+  searchParams: Promise<{ reason?: string }>;
+};
+
+export default async function AccessDeniedPage({ searchParams }: AccessDeniedPageProps) {
   const user = await getCurrentUser();
+  const { reason } = await searchParams;
+
+  const reasonCopy: Record<string, string> = {
+    email_mismatch:
+      "The email on your account does not match your checkout email. Sign in with the same email used at purchase.",
+    purchase_not_found:
+      "We could not find your purchase yet. Wait a moment and try again, or contact support with your Stripe receipt.",
+    purchase_already_claimed:
+      "This purchase is already linked to another account. Sign in with the account you originally created.",
+    claim_failed:
+      "We could not link your purchase to this account. Sign in with your checkout email or contact support.",
+  };
+
+  const description = reason && reasonCopy[reason]
+    ? reasonCopy[reason]
+    : user
+      ? "Your account is signed in, but we could not find an active purchase linked to this email. Purchase the 40-Day Creator Development Plan to unlock dashboard access."
+      : "Sign in with the email and password you created after checkout, or purchase the plan to unlock dashboard access.";
 
   return (
     <>
       <PageHero
         label="Creator Dashboard"
         title="Dashboard Access Required"
-        description={
-          user
-            ? "Your account is signed in, but we could not find an active purchase linked to this email. Purchase the 40-Day Creator Development Plan to unlock dashboard access."
-            : "Sign in with the email you used at checkout, or purchase the plan to unlock dashboard access."
-        }
+        description={description}
       />
       <section className="py-section text-center sm:py-section-lg">
         <div className="luxury-container flex flex-col items-center justify-center gap-4 sm:flex-row">

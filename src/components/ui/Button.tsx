@@ -48,7 +48,7 @@ export function Button({
   external,
   ...props
 }: ButtonProps | LinkButtonProps) {
-  const classes = `inline-flex items-center justify-center font-sans font-medium transition-all duration-luxury ease-luxury ${variantStyles[variant]} ${sizeStyles[size]} ${className}`;
+  const classes = `inline-flex shrink-0 items-center justify-center whitespace-nowrap font-sans font-medium transition-all duration-luxury ease-luxury ${variantStyles[variant]} ${sizeStyles[size]} ${className}`;
 
   if (href) {
     if (external) {

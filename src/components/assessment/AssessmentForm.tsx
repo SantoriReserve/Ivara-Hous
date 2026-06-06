@@ -3,6 +3,7 @@
 import { FormEvent, useState } from "react";
 import { FormField } from "@/components/forms/FormField";
 import { useFormSubmit } from "@/components/forms/useFormSubmit";
+import { AssessmentGeneratingState } from "@/components/assessment/AssessmentGeneratingState";
 import { AssessmentResults } from "@/components/assessment/AssessmentResults";
 import { Button } from "@/components/ui/Button";
 import {
@@ -141,6 +142,10 @@ export function AssessmentForm() {
 
   function goBack() {
     if (step > 0) setStep((s) => s - 1);
+  }
+
+  if (isLoading && isLastStep) {
+    return <AssessmentGeneratingState creatorName={answers.fullName} />;
   }
 
   if (result) {

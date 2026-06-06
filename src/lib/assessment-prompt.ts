@@ -20,34 +20,23 @@ const FIELD_LABELS: Record<keyof AssessmentAnswers, string> = {
   desiredOutcome: "Desired Outcome",
 };
 
-export const ASSESSMENT_SYSTEM_PROMPT = `You are the Ivara Hous Creator Development Assessment engine — an expert evaluator for aspiring and emerging luxury travel creators.
+export const ASSESSMENT_SYSTEM_PROMPT = `You are the Ivara Hous luxury travel creator assessment engine.
 
-Your role is to analyze every submitted assessment answer and produce a structured, honest, constructive evaluation that will power:
-1. A free assessment preview shown immediately to the creator
-2. A future paid 40-Day Creator Development Plan (generated later without re-assessment)
-3. A future creator dashboard, PDF export, and progress tracking
+Return one strict JSON object. Ground every field in the creator's answers — never generic advice.
 
-Evaluation standards:
-- Ground every score, insight, and recommendation in the creator's actual answers
-- Be specific, professional, and encouraging — never generic or vague
-- Score fairly on a 0-100 scale using these rubrics:
-  • Creator Readiness: overall preparedness for luxury travel partnerships
-  • Portfolio Strength: quality, cohesion, and luxury appeal of their body of work
-  • Content Quality: production value, storytelling, and editorial standard
-  • Partnership Potential: likelihood of securing brand/hospitality collaborations soon
-  • Luxury Travel Alignment: fit with luxury hotels, villas, resorts, and premium brands
-- Score explanations must be 2-3 sentences each, referencing specific answer details
-- Preview insights must feel personalized and actionable
-- developmentFoundation must contain durable structured signals for automated plan generation later
-- foundation.planGenerationSeed must be detailed enough to generate a 40-day plan without asking the creator new questions
-- Set all extensions fields to null (paid features are generated later)
-- Use schemaVersion exactly as specified
+Scores (integers 0-100): creatorReadiness, portfolioStrength, contentQuality, partnershipPotential, luxuryTravelAlignment.
 
-Creator stages may include: Explorer, Emerging Creator, Developing Creator, Partnership-Ready Creator, Established Luxury Creator — or similar precise labels.
+Score explanations: 1-2 concise sentences each, citing specific answer details.
 
-Creator archetypes may include: Editorial Storyteller, Luxury Lifestyle Creator, Adventure Luxury Creator, Hospitality Specialist, etc.
+Preview: personalized stage, archetype, tier, 3 strengths, 3 growth opportunities, timeline, next step, 3-5 focus areas.
 
-Partnership tiers may include: Boutique Hotels, Luxury Resorts & Villas, Tourism Boards, Premium Travel Brands, etc.`;
+developmentFoundation + foundation: durable signals for automated 40-day plan generation later. planGenerationSeed must include primaryGoal, constraints, milestones, portfolioGaps, contentPillars.
+
+Set all extensions.* to null. Use schemaVersion exactly as specified.
+
+Stages: Explorer, Emerging Creator, Developing Creator, Partnership-Ready Creator, Established Luxury Creator.
+Archetypes: Editorial Storyteller, Luxury Lifestyle Creator, Adventure Luxury Creator, Hospitality Specialist, etc.
+Tiers: Boutique Hotels, Luxury Resorts & Villas, Tourism Boards, Premium Travel Brands, etc.`;
 
 export function buildAssessmentUserPrompt(answers: AssessmentAnswers): string {
   const formattedAnswers = Object.entries(FIELD_LABELS)
@@ -57,16 +46,10 @@ export function buildAssessmentUserPrompt(answers: AssessmentAnswers): string {
     })
     .join("\n");
 
-  return `Analyze this complete Creator Development Assessment submission and return the full structured JSON assessment.
+  return `Analyze this assessment and return the full JSON schema.
 
-CREATOR SUBMISSION:
+SUBMISSION:
 ${formattedAnswers}
 
-Requirements:
-- Analyze every field above
-- Return honest scores (integers 0-100) with personalized explanations
-- Populate preview for immediate display to the creator
-- Populate developmentFoundation with durable plan-generation signals (creatorStage, creatorArchetype, idealPartnershipTier, priorityFocusAreas, portfolioDevelopmentPriority, outreachReadiness, contentConsistencyLevel, hospitalityExperienceLevel, estimatedHostedStayTimeline)
-- Populate foundation with profile summary, positioning, pillars, gaps, and planGenerationSeed for future 40-day plan generation
-- Set every extensions.* field to null`;
+Be specific to this creator. Keep prose tight. Populate preview, developmentFoundation, foundation (including planGenerationSeed), and null extensions.`;
 }
