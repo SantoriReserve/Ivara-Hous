@@ -7,6 +7,7 @@ export const ROUTES = {
   about: "/about",
   services: "/services",
   creatorDevelopment: "/creator-development",
+  creatorDevelopmentPlan: "/creator-development/plan",
   creatorApplication: "/creator-application",
   partnerWithUs: "/partner-with-us",
   creativePartnerApplication: "/creative-partner-application",

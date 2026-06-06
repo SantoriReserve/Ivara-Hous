@@ -142,18 +142,24 @@ export function AssessmentResults({
       <div className="border border-black bg-black p-12 text-center text-white sm:p-16">
         <p className="luxury-label mb-5 text-white/50">Next Step</p>
         <h3 className="font-serif text-2xl font-normal tracking-tight sm:text-3xl">
-          Unlock Your 40-Day Creator Development Plan
+          Learn More About The 40-Day Creator Development Plan
         </h3>
         <p className="mx-auto mt-6 max-w-lg text-sm leading-[1.75] text-white/65">
-          Personalized content strategy, portfolio guidance, outreach resources,
-          and daily action steps tailored to your assessment results.
+          Your assessment preview is complete. Explore the full 40-Day Creator
+          Development Plan — a premium automated digital product with a personalized
+          dashboard, daily action steps, and instant access after purchase.
         </p>
         <p className="mt-8 font-serif text-4xl font-normal tracking-tight">$95</p>
-        <Button href={ROUTES.contact} variant="secondary" size="lg" className="mt-10">
-          Unlock Your 40-Day Creator Development Plan — $95
+        <Button
+          href={ROUTES.creatorDevelopmentPlan}
+          variant="secondary"
+          size="lg"
+          className="mt-10"
+        >
+          Unlock Your 40-Day Creator Development Plan
         </Button>
         <p className="mt-8 font-sans text-[10px] uppercase tracking-nav text-white/40">
-          Secure checkout via Stripe — coming soon. Contact us to reserve your plan.
+          Purchase → Create account → Instant dashboard access → Plan by email → Begin Day 1
         </p>
       </div>
     </div>
