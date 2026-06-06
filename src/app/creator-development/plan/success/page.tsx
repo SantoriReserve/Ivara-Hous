@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
+import type Stripe from "stripe";
 import { Button } from "@/components/ui/Button";
 import { PageHero } from "@/components/layout/PageHero";
 import { CREATOR_DEVELOPMENT_PLAN_PRODUCT } from "@/lib/stripe-product";
@@ -22,6 +23,19 @@ function formatAmount(amountCents: number, currency: string): string {
   }).format(amountCents / 100);
 }
 
+function isValidPurchaseSession(session: Stripe.Checkout.Session): boolean {
+  const isComplete = session.status === "complete";
+  const isValidPaymentStatus =
+    session.payment_status === "paid" ||
+    session.payment_status === "no_payment_required";
+  const currencyMatches =
+    session.currency === CREATOR_DEVELOPMENT_PLAN_PRODUCT.currency;
+  const productMatches =
+    session.metadata?.productSlug === CREATOR_DEVELOPMENT_PLAN_PRODUCT.slug;
+
+  return isComplete && isValidPaymentStatus && currencyMatches && productMatches;
+}
+
 export default async function CreatorDevelopmentPlanSuccessPage({
   searchParams,
 }: SuccessPageProps) {
@@ -41,13 +55,7 @@ export default async function CreatorDevelopmentPlanSuccessPage({
     const stripe = getStripe();
     const session = await stripe.checkout.sessions.retrieve(sessionId);
 
-    const isPaid = session.payment_status === "paid";
-    const amountMatches =
-      session.amount_total === CREATOR_DEVELOPMENT_PLAN_PRODUCT.amountCents;
-    const currencyMatches =
-      session.currency === CREATOR_DEVELOPMENT_PLAN_PRODUCT.currency;
-
-    if (!isPaid || !amountMatches || !currencyMatches) {
+    if (!isValidPurchaseSession(session)) {
       return (
         <ConfirmationLayout
           title="Payment Not Confirmed"
@@ -59,10 +67,11 @@ export default async function CreatorDevelopmentPlanSuccessPage({
 
     const customerEmail =
       session.customer_details?.email ?? session.customer_email ?? null;
-    const amountLabel = formatAmount(
-      session.amount_total ?? CREATOR_DEVELOPMENT_PLAN_PRODUCT.amountCents,
-      session.currency ?? CREATOR_DEVELOPMENT_PLAN_PRODUCT.currency
-    );
+    const amountTotal = session.amount_total ?? 0;
+    const currency =
+      session.currency ?? CREATOR_DEVELOPMENT_PLAN_PRODUCT.currency;
+    const amountLabel = formatAmount(amountTotal, currency);
+    const isFullyDiscounted = amountTotal === 0;
 
     return (
       <ConfirmationLayout
@@ -82,6 +91,14 @@ export default async function CreatorDevelopmentPlanSuccessPage({
               {amountLabel}
             </dd>
           </div>
+          {isFullyDiscounted && (
+            <div>
+              <dt className="luxury-label mb-2 text-white/50">Promotion</dt>
+              <dd className="font-sans text-sm text-white">
+                A promotion code was applied.
+              </dd>
+            </div>
+          )}
           {customerEmail && (
             <div>
               <dt className="luxury-label mb-2 text-white/50">Confirmation Email</dt>
