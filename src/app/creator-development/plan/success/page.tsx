@@ -62,8 +62,9 @@ export default async function CreatorDevelopmentPlanSuccessPage({
 
     return (
       <ConfirmationLayout
+        sessionId={sessionId}
         title="Purchase Confirmed"
-        description="Your 40-Day Creator Development Plan is confirmed. Your personalized creator development system will be available in your dashboard in a future release."
+        description="Your 40-Day Creator Development Plan is confirmed. Create your account to access your creator dashboard."
       >
         <dl className="mx-auto mt-12 max-w-md space-y-6 text-left">
           <div>
@@ -111,13 +112,18 @@ function ConfirmationLayout({
   title,
   description,
   children,
+  sessionId,
   error = false,
 }: {
   title: string;
   description: string;
   children?: ReactNode;
+  sessionId?: string;
   error?: boolean;
 }) {
+  const claimHref = sessionId
+    ? `${ROUTES.claim}?session_id=${encodeURIComponent(sessionId)}`
+    : ROUTES.claim;
   return (
     <>
       <PageHero
@@ -129,11 +135,20 @@ function ConfirmationLayout({
       <section className="border-t border-black/10 bg-black py-section text-white sm:py-section-lg">
         <div className="luxury-container max-w-3xl text-center">
           {children}
-          <div className="mt-12">
+          <div className="mt-12 flex flex-col items-center justify-center gap-4 sm:flex-row">
+            {!error && (
+              <Button href={claimHref} variant="primary" size="lg">
+                Create Your Account
+              </Button>
+            )}
+            <Button href={ROUTES.login} variant="secondary" size="lg">
+              Sign In
+            </Button>
             <Button
               href={ROUTES.creatorDevelopmentPlan}
-              variant="secondary"
+              variant="ghost"
               size="lg"
+              className="text-white hover:text-white/80"
             >
               Return To Plan Overview
             </Button>

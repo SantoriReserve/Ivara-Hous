@@ -6,6 +6,14 @@ export function getSupabaseUrl(): string {
   return url;
 }
 
+export function getSupabaseAnonKey(): string {
+  const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  if (!key) {
+    throw new Error("NEXT_PUBLIC_SUPABASE_ANON_KEY is not configured");
+  }
+  return key;
+}
+
 export function getSupabaseServiceRoleKey(): string {
   const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
   if (!key) {

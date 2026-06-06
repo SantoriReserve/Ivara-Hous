@@ -39,6 +39,12 @@ export function Header() {
         </nav>
 
         <div className="hidden shrink-0 items-center gap-4 lg:flex">
+          <Link href={ROUTES.dashboard} className="nav-link">
+            Dashboard
+          </Link>
+          <Link href={ROUTES.login} className="nav-link">
+            Sign In
+          </Link>
           <Button href={ROUTES.creatorApplication} variant="ghost" size="sm">
             Creator Application
           </Button>
@@ -90,6 +96,24 @@ export function Header() {
                 </Link>
               </li>
             ))}
+            <li className="border-t border-black/10 pt-6">
+              <Link
+                href={ROUTES.dashboard}
+                className="block font-sans text-sm uppercase tracking-nav text-gray-mid hover:text-black"
+                onClick={closeMenu}
+              >
+                Dashboard
+              </Link>
+            </li>
+            <li>
+              <Link
+                href={ROUTES.login}
+                className="block font-sans text-sm uppercase tracking-nav text-gray-mid hover:text-black"
+                onClick={closeMenu}
+              >
+                Sign In
+              </Link>
+            </li>
             <li className="flex flex-col gap-3 border-t border-black/10 pt-6">
               <Button
                 href={ROUTES.creatorApplication}

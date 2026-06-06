@@ -102,3 +102,24 @@ export async function getPurchaseByCheckoutSessionId(
 
   return data ? mapPurchaseRow(data) : null;
 }
+
+export async function getActivePurchaseForUser(
+  userId: string
+): Promise<PurchaseRecord | null> {
+  const supabase = getSupabaseAdmin();
+  const { data, error } = await supabase
+    .from("purchases")
+    .select("*")
+    .eq("user_id", userId)
+    .eq("product_slug", CREATOR_DEVELOPMENT_PLAN_PRODUCT.slug)
+    .eq("status", "completed")
+    .order("purchased_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (error) {
+    throw new Error(`Failed to load user purchase: ${error.message}`);
+  }
+
+  return data ? mapPurchaseRow(data) : null;
+}

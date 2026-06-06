@@ -2,6 +2,7 @@ export type PurchaseStatus = "completed" | "refunded";
 
 export type PurchaseRecord = {
   id: string;
+  userId: string | null;
   assessmentId: string | null;
   customerEmail: string;
   stripeCustomerId: string | null;
@@ -12,6 +13,7 @@ export type PurchaseRecord = {
   currency: string;
   status: PurchaseStatus;
   purchasedAt: string;
+  claimedAt: string | null;
   createdAt: string;
   updatedAt: string;
 };
@@ -31,6 +33,7 @@ export type PurchaseInsert = {
 
 type PurchaseRow = {
   id: string;
+  user_id: string | null;
   assessment_id: string | null;
   customer_email: string;
   stripe_customer_id: string | null;
@@ -41,6 +44,7 @@ type PurchaseRow = {
   currency: string;
   status: PurchaseStatus;
   purchased_at: string;
+  claimed_at: string | null;
   created_at: string;
   updated_at: string;
 };
@@ -48,6 +52,7 @@ type PurchaseRow = {
 export function mapPurchaseRow(row: PurchaseRow): PurchaseRecord {
   return {
     id: row.id,
+    userId: row.user_id,
     assessmentId: row.assessment_id,
     customerEmail: row.customer_email,
     stripeCustomerId: row.stripe_customer_id,
@@ -58,6 +63,7 @@ export function mapPurchaseRow(row: PurchaseRow): PurchaseRecord {
     currency: row.currency,
     status: row.status,
     purchasedAt: row.purchased_at,
+    claimedAt: row.claimed_at,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
