@@ -4,7 +4,7 @@ import { getCurrentUser } from "@/lib/auth/require-user";
 import { ensurePlanForPurchase, retryFailedPlan } from "@/lib/plan/plan-generator";
 import { getActivePurchaseForUser } from "@/lib/purchase-repository";
 
-export const maxDuration = 120;
+export const maxDuration = 300;
 
 export async function POST(request: Request) {
   const user = await getCurrentUser();

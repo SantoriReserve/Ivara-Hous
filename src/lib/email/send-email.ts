@@ -1,6 +1,16 @@
 import { Resend } from "resend";
-import { getEmailFromAddress, getResendApiKey, isEmailConfigured } from "@/lib/email/env";
+import {
+  getEmailFromAddress,
+  getReplyToEmail,
+  getResendApiKey,
+  isEmailConfigured,
+} from "@/lib/email/env";
 import { recordEmailDelivery } from "@/lib/email/email-delivery-repository";
+
+export type EmailAttachment = {
+  filename: string;
+  content: Buffer;
+};
 
 export type SendEmailParams = {
   to: string;
@@ -9,6 +19,9 @@ export type SendEmailParams = {
   emailType: string;
   userId?: string;
   purchaseId?: string;
+  planInstanceId?: string;
+  attachments?: EmailAttachment[];
+  attachmentUrl?: string | null;
 };
 
 export type SendEmailResult =
@@ -30,20 +43,31 @@ export async function sendBrandedEmail(params: SendEmailParams): Promise<SendEma
     return { sent: false, reason: "email_not_configured" };
   }
 
+  const deliveryBase = {
+    userId: params.userId,
+    purchaseId: params.purchaseId,
+    planInstanceId: params.planInstanceId,
+    emailType: params.emailType,
+    recipientEmail: params.to,
+    attachmentUrl: params.attachmentUrl ?? null,
+  };
+
   try {
     const { data, error } = await getResendClient().emails.send({
       from: getEmailFromAddress(),
+      replyTo: getReplyToEmail(),
       to: params.to,
       subject: params.subject,
       html: params.html,
+      attachments: params.attachments?.map((attachment) => ({
+        filename: attachment.filename,
+        content: attachment.content.toString("base64"),
+      })),
     });
 
     if (error) {
       await recordEmailDelivery({
-        userId: params.userId,
-        purchaseId: params.purchaseId,
-        emailType: params.emailType,
-        recipientEmail: params.to,
+        ...deliveryBase,
         status: "failed",
         resendId: null,
         errorMessage: error.message,
@@ -52,10 +76,7 @@ export async function sendBrandedEmail(params: SendEmailParams): Promise<SendEma
     }
 
     await recordEmailDelivery({
-      userId: params.userId,
-      purchaseId: params.purchaseId,
-      emailType: params.emailType,
-      recipientEmail: params.to,
+      ...deliveryBase,
       status: "sent",
       resendId: data?.id ?? null,
       errorMessage: null,
@@ -65,10 +86,7 @@ export async function sendBrandedEmail(params: SendEmailParams): Promise<SendEma
   } catch (error) {
     const message = error instanceof Error ? error.message : "Unknown email error";
     await recordEmailDelivery({
-      userId: params.userId,
-      purchaseId: params.purchaseId,
-      emailType: params.emailType,
-      recipientEmail: params.to,
+      ...deliveryBase,
       status: "failed",
       resendId: null,
       errorMessage: message,

@@ -1,17 +1,8 @@
-/**
- * PDF delivery architecture (Phase 3B.2+).
- *
- * Single source of truth: plan_instances + child tables (same graph as dashboard).
- * PDF export reads PlanGraph — never a separate generated artifact store.
- *
- * Future flow:
- * 1. generatePlanPdf(planInstanceId) → Buffer + filename
- * 2. uploadPlanPdf(buffer) → storage URL (Supabase Storage or S3)
- * 3. sendPlanPdfEmail({ userId, purchaseId, planInstanceId, pdfUrl })
- * 4. record email_deliveries with email_type = 'plan_pdf' + attachment_url
- * 5. Dashboard download button calls GET /api/plan/pdf (signed URL)
- */
-
+import { getAssessmentById } from "@/lib/assessment-repository";
+import { sendPlanPdfEmail } from "@/lib/email/send-plan-pdf";
+import { hasPlanPdfBeenSent } from "@/lib/email/email-delivery-repository";
+import { renderPlanPdf } from "@/lib/plan/plan-pdf-generator";
+import { getPlanGraph } from "@/lib/plan/plan-repository";
 import type { PlanGraph } from "@/lib/plan/plan-schema";
 
 export type PlanPdfExportInput = {
@@ -25,13 +16,12 @@ export type PlanPdfExportResult = {
   buffer: Buffer;
 };
 
-export type PlanPdfEmailPayload = {
-  to: string;
-  fullName: string;
+export type DeliverPlanPdfParams = {
   userId: string;
   purchaseId: string;
   planInstanceId: string;
-  pdfUrl: string;
+  recipientEmail: string;
+  fullName: string;
 };
 
 export function buildPlanPdfFilename(graph: PlanGraph): string {
@@ -46,11 +36,61 @@ export function buildPlanPdfFilename(graph: PlanGraph): string {
 export async function generatePlanPdf(
   input: PlanPdfExportInput
 ): Promise<PlanPdfExportResult> {
-  void input;
-  throw new Error("Plan PDF generation is not implemented yet (Phase 3B.2+)");
+  const graph = await getPlanGraph(input.planInstanceId);
+  if (!graph) {
+    throw new Error("Plan not found for PDF export");
+  }
+
+  const assessment = await getAssessmentById(graph.instance.assessmentId);
+  if (!assessment) {
+    throw new Error("Assessment not found for PDF export");
+  }
+
+  const fullName = assessment.answers.fullName || "Creator";
+  const buffer = await renderPlanPdf({ graph, assessment, fullName });
+
+  return {
+    filename: buildPlanPdfFilename(graph),
+    contentType: "application/pdf",
+    buffer,
+  };
 }
 
-export async function sendPlanPdfEmail(payload: PlanPdfEmailPayload): Promise<void> {
-  void payload;
-  throw new Error("Plan PDF email delivery is not implemented yet (Phase 3B.2+)");
+export async function deliverPlanPdfIfNeeded(params: DeliverPlanPdfParams): Promise<void> {
+  try {
+    const alreadySent = await hasPlanPdfBeenSent(params.planInstanceId);
+    if (alreadySent) {
+      return;
+    }
+
+    const graph = await getPlanGraph(params.planInstanceId);
+    if (!graph || graph.instance.status !== "active") {
+      return;
+    }
+
+    const { buffer, filename } = await generatePlanPdf({
+      planInstanceId: params.planInstanceId,
+      userId: params.userId,
+    });
+
+    const result = await sendPlanPdfEmail({
+      to: params.recipientEmail,
+      fullName: params.fullName,
+      userId: params.userId,
+      purchaseId: params.purchaseId,
+      planInstanceId: params.planInstanceId,
+      planTitle: graph.instance.planSummary.title,
+      pdfBuffer: buffer,
+      pdfFilename: filename,
+    });
+
+    if (!result.sent) {
+      console.error("[plan-pdf] Delivery failed:", result.reason);
+    }
+  } catch (error) {
+    console.error(
+      "[plan-pdf] Delivery error:",
+      error instanceof Error ? error.message : error
+    );
+  }
 }

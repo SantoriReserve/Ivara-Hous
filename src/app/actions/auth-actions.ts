@@ -34,7 +34,7 @@ function validatePassword(password: string): string | null {
   return null;
 }
 
-async function waitForPurchase(stripeCheckoutSessionId: string, attempts = 5) {
+async function waitForPurchase(stripeCheckoutSessionId: string, attempts = 10) {
   for (let attempt = 0; attempt < attempts; attempt += 1) {
     const purchase = await getPurchaseByCheckoutSessionId(stripeCheckoutSessionId);
     if (purchase) {

@@ -12,6 +12,7 @@ import {
   persistPlanGraph,
   planHasGeneratedContent,
 } from "@/lib/plan/plan-repository";
+import { deliverPlanPdfIfNeeded } from "@/lib/plan/plan-pdf-delivery";
 import type { PlanInstanceRecord } from "@/lib/plan/plan-schema";
 import type { PurchaseRecord } from "@/lib/purchase-schema";
 
@@ -31,6 +32,13 @@ export async function ensurePlanForPurchase(
 
   if (existing) {
     if (existing.status === "active" || existing.status === "completed") {
+      void deliverPlanPdfIfNeeded({
+        userId,
+        purchaseId: purchase.id,
+        planInstanceId: existing.id,
+        recipientEmail: purchase.customerEmail,
+        fullName: purchase.customerEmail,
+      });
       return { status: "existing", plan: existing };
     }
 
@@ -136,6 +144,14 @@ async function runGeneration(
     if (!updated) {
       return { status: "error", message: "Plan generated but not found" };
     }
+
+    void deliverPlanPdfIfNeeded({
+      userId,
+      purchaseId: purchase.id,
+      planInstanceId: updated.id,
+      recipientEmail: purchase.customerEmail,
+      fullName: assessment.answers.fullName || purchase.customerEmail,
+    });
 
     return { status: "generated", plan: updated };
   } catch (error) {

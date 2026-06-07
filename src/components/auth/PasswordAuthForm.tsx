@@ -83,6 +83,10 @@ export function PasswordAuthForm({
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-6">
+        {mode === "register" && sessionId && (
+          <input type="hidden" name="sessionId" value={sessionId} />
+        )}
+
         {mode === "register" && (
           <FormField
             label="Full Name"

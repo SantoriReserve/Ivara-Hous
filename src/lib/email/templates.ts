@@ -93,9 +93,30 @@ export function renderPurchaseWelcomeEmail(params: {
           <li style="margin-bottom:8px;">Start with <strong>Today</strong> to complete your first actionable tasks.</li>
           <li style="margin-bottom:8px;">Track progress across all 40 days at your own pace — no calendar lock.</li>
         </ol>
-        <p style="margin-top:24px;padding:16px;background:#f7f7f5;border-left:3px solid #111111;">
-          <strong>Coming soon:</strong> Your completed plan will also be delivered as a downloadable PDF attached to a future email from ${SITE_NAME}.
-        </p>
+        <p>Once your plan is ready, you will receive a separate email with your complete 40-Day Creator Development Plan as a PDF attachment.</p>
+      `,
+      ctaLabel: "Open Your Dashboard",
+      ctaUrl: params.dashboardUrl,
+    }),
+  };
+}
+
+export function renderPlanPdfEmail(params: {
+  fullName: string;
+  planTitle: string;
+  dashboardUrl: string;
+}): { subject: string; html: string } {
+  const firstName = params.fullName.trim().split(" ")[0] || "Creator";
+
+  return {
+    subject: `Your 40-Day Creator Development Plan — ${SITE_NAME}`,
+    html: renderBrandedEmail({
+      preheader: "Your personalized 40-Day Creator Development Plan PDF is attached.",
+      headline: `Your plan is ready, ${firstName}`,
+      bodyHtml: `
+        <p>Your personalized <strong>${params.planTitle}</strong> has been generated.</p>
+        <p>The attached PDF includes your assessment summary, creator archetype and stage, personalized recommendations, and the complete 40-day plan with every day and task.</p>
+        <p>Continue tracking progress and completing tasks in your dashboard at any time.</p>
       `,
       ctaLabel: "Open Your Dashboard",
       ctaUrl: params.dashboardUrl,
