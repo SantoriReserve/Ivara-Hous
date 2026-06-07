@@ -29,7 +29,7 @@ export const assessmentPreviewSchema = z.object({
   idealPartnershipTier: z.string().min(1),
   topStrengths: z.array(z.string().min(1)).length(3),
   growthOpportunities: z.array(z.string().min(1)).length(3),
-  estimatedTimelineToFirstHostedStay: z.string().min(1),
+  estimatedTimelineToFirstCollaboration: z.string().min(1),
   recommendedNextStep: z.string().min(1),
   priorityFocusAreas: z.array(z.string().min(1)).min(3).max(5),
 });
@@ -43,7 +43,7 @@ export const developmentFoundationSchema = z.object({
   outreachReadiness: readinessLevelSchema,
   contentConsistencyLevel: readinessLevelSchema,
   hospitalityExperienceLevel: readinessLevelSchema,
-  estimatedHostedStayTimeline: z.string().min(1),
+  estimatedCollaborationTimeline: z.string().min(1),
 });
 
 const developmentPrioritySchema = z.object({
@@ -142,6 +142,40 @@ export const assessmentAnswersSchema = z.object({
   desiredOutcome: z.string().min(1),
 });
 
+export function deriveCollaborationTimeline(scores: AssessmentScores): string {
+  const profileStrength =
+    (scores.creatorReadiness +
+      scores.portfolioStrength +
+      scores.partnershipPotential +
+      scores.contentQuality) /
+    4;
+
+  if (profileStrength >= 75) {
+    return "30–60 days";
+  }
+  if (profileStrength >= 55) {
+    return "60–90 days";
+  }
+  return "90–180 days";
+}
+
+type LegacyAssessmentPreview = AssessmentPreview & {
+  estimatedTimelineToFirstHostedStay?: string;
+};
+
+export function getCollaborationTimeline(
+  preview: LegacyAssessmentPreview,
+  scores: AssessmentScores
+): string {
+  if (preview.estimatedTimelineToFirstCollaboration) {
+    return preview.estimatedTimelineToFirstCollaboration;
+  }
+  if (preview.estimatedTimelineToFirstHostedStay) {
+    return preview.estimatedTimelineToFirstHostedStay;
+  }
+  return deriveCollaborationTimeline(scores);
+}
+
 export function clampScores(scores: AssessmentScores): AssessmentScores {
   const clamp = (value: number) => Math.max(0, Math.min(100, Math.round(value)));
   return {
@@ -213,7 +247,7 @@ export const OPENAI_ASSESSMENT_JSON_SCHEMA = {
         "idealPartnershipTier",
         "topStrengths",
         "growthOpportunities",
-        "estimatedTimelineToFirstHostedStay",
+        "estimatedTimelineToFirstCollaboration",
         "recommendedNextStep",
         "priorityFocusAreas",
       ],
@@ -233,7 +267,7 @@ export const OPENAI_ASSESSMENT_JSON_SCHEMA = {
           minItems: 3,
           maxItems: 3,
         },
-        estimatedTimelineToFirstHostedStay: { type: "string" },
+        estimatedTimelineToFirstCollaboration: { type: "string" },
         recommendedNextStep: { type: "string" },
         priorityFocusAreas: {
           type: "array",
@@ -255,7 +289,7 @@ export const OPENAI_ASSESSMENT_JSON_SCHEMA = {
         "outreachReadiness",
         "contentConsistencyLevel",
         "hospitalityExperienceLevel",
-        "estimatedHostedStayTimeline",
+        "estimatedCollaborationTimeline",
       ],
       properties: {
         creatorStage: { type: "string" },
@@ -271,7 +305,7 @@ export const OPENAI_ASSESSMENT_JSON_SCHEMA = {
         outreachReadiness: { type: "string", enum: ["low", "moderate", "high"] },
         contentConsistencyLevel: { type: "string", enum: ["low", "moderate", "high"] },
         hospitalityExperienceLevel: { type: "string", enum: ["low", "moderate", "high"] },
-        estimatedHostedStayTimeline: { type: "string" },
+        estimatedCollaborationTimeline: { type: "string" },
       },
     },
     foundation: {

@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import {
@@ -9,6 +10,7 @@ import {
 } from "@/app/actions/auth-actions";
 import { Button } from "@/components/ui/Button";
 import { FormField } from "@/components/forms/FormField";
+import { ROUTES } from "@/lib/constants";
 
 type PasswordAuthFormProps = {
   mode: "register" | "login";
@@ -58,6 +60,9 @@ export function PasswordAuthForm({
         if (sessionId) {
           formData.set("sessionId", sessionId);
         }
+        if (defaultEmail) {
+          formData.set("email", defaultEmail);
+        }
         result = await registerAndClaimAction(formData);
       } else {
         formData.set("nextPath", nextPath);
@@ -104,7 +109,8 @@ export function PasswordAuthForm({
           defaultValue={defaultEmail}
           required
           autoComplete="email"
-          disabled={Boolean(defaultEmail)}
+          readOnly={Boolean(defaultEmail)}
+          className={defaultEmail ? "cursor-default bg-gray-light" : undefined}
         />
 
         <FormField
@@ -128,9 +134,20 @@ export function PasswordAuthForm({
         )}
 
         {error && (
-          <p className="font-sans text-sm text-red-600" role="alert">
-            {error}
-          </p>
+          <div className="space-y-3" role="alert">
+            <p className="font-sans text-sm text-red-600">{error}</p>
+            {mode === "register" &&
+              /already exists|sign in/i.test(error) && (
+                <p className="font-sans text-sm text-gray-mid">
+                  <Link
+                    href={ROUTES.login}
+                    className="text-black underline underline-offset-4"
+                  >
+                    Sign in to your existing account
+                  </Link>
+                </p>
+              )}
+          </div>
         )}
 
         <Button

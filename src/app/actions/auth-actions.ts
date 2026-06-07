@@ -52,8 +52,19 @@ export async function registerAndClaimAction(formData: FormData): Promise<AuthAc
   const fullName = String(formData.get("fullName") ?? "").trim();
   const sessionId = String(formData.get("sessionId") ?? "").trim();
 
-  if (!email || !password || !sessionId) {
-    return { success: false, error: "Email, password, and checkout session are required." };
+  if (!sessionId) {
+    return {
+      success: false,
+      error: "Checkout session is missing. Return to your purchase confirmation page and try again.",
+    };
+  }
+
+  if (!email) {
+    return { success: false, error: "Email is required." };
+  }
+
+  if (!password) {
+    return { success: false, error: "Password is required." };
   }
 
   const passwordError = validatePassword(password);
@@ -107,10 +118,16 @@ export async function registerAndClaimAction(formData: FormData): Promise<AuthAc
 
     if (createError || !created.user) {
       const message = createError?.message ?? "Could not create account.";
-      if (message.toLowerCase().includes("already")) {
+      const normalized = message.toLowerCase();
+      if (
+        normalized.includes("already") ||
+        normalized.includes("registered") ||
+        normalized.includes("exists")
+      ) {
         return {
           success: false,
-          error: "An account with this email already exists. Sign in instead.",
+          error:
+            "An account with this email already exists. Sign in with your password to access your dashboard and link this purchase.",
         };
       }
       return { success: false, error: message };

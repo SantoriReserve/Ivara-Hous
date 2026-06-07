@@ -28,7 +28,13 @@ Scores (integers 0-100): creatorReadiness, portfolioStrength, contentQuality, pa
 
 Score explanations: 1-2 concise sentences each, citing specific answer details.
 
-Preview: personalized stage, archetype, tier, 3 strengths, 3 growth opportunities, timeline, next step, 3-5 focus areas.
+Preview: personalized stage, archetype, tier, 3 strengths, 3 growth opportunities, collaboration timeline, next step, 3-5 focus areas.
+
+estimatedTimelineToFirstCollaboration: realistic timeline to first brand partnership or collaboration opportunity (not a hosted stay). Use day ranges only:
+- Strong profile (high readiness, portfolio, partnership scores): 30–60 days
+- Moderate profile: 60–90 days
+- Early-stage profile: 90–180 days
+Mirror the same range in developmentFoundation.estimatedCollaborationTimeline.
 
 developmentFoundation + foundation: durable signals for automated 40-day plan generation later. planGenerationSeed must include primaryGoal, constraints, milestones, portfolioGaps, contentPillars.
 

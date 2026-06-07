@@ -14,36 +14,46 @@ export function Header() {
   return (
     <header className="sticky top-0 z-50 border-b border-black/10 bg-white/95 backdrop-blur-sm">
       <div className="luxury-container flex h-[4.5rem] items-center justify-between lg:h-24">
-        <Link
-          href={ROUTES.home}
-          className="font-serif text-xl tracking-tight text-black transition-opacity duration-luxury hover:opacity-60 sm:text-2xl"
-          onClick={closeMenu}
-        >
-          {SITE_NAME}
-        </Link>
-
-        <nav
-          className="hidden items-center gap-8 xl:gap-10 lg:flex"
-          aria-label="Main navigation"
-        >
-          {NAV_LINKS.map((link) => (
-            <Link
-              key={link.href}
-              href={link.href}
-              className="nav-link"
-              data-active={pathname === link.href ? "true" : "false"}
-            >
-              {link.label}
-            </Link>
-          ))}
-        </nav>
-
-        <div className="hidden shrink-0 items-center gap-4 lg:flex">
-          <Link href={ROUTES.dashboard} className="nav-link">
-            Dashboard
+        <div className="flex min-w-0 flex-1 items-center gap-10 lg:gap-16 xl:gap-20">
+          <Link
+            href={ROUTES.home}
+            className="shrink-0 font-serif text-xl tracking-tight text-black transition-opacity duration-luxury hover:opacity-60 sm:text-2xl"
+            onClick={closeMenu}
+          >
+            {SITE_NAME}
           </Link>
-          <Link href={ROUTES.login} className="nav-link">
+
+          <nav
+            className="hidden min-w-0 items-center gap-8 xl:gap-10 lg:flex"
+            aria-label="Main navigation"
+          >
+            {NAV_LINKS.map((link) => (
+              <Link
+                key={link.href}
+                href={link.href}
+                className="nav-link whitespace-nowrap"
+                data-active={pathname === link.href ? "true" : "false"}
+              >
+                {link.label}
+              </Link>
+            ))}
+          </nav>
+        </div>
+
+        <div className="hidden shrink-0 items-center gap-5 lg:flex">
+          <Link
+            href={ROUTES.login}
+            className="nav-link whitespace-nowrap"
+            data-active={pathname === ROUTES.login ? "true" : "false"}
+          >
             Sign In
+          </Link>
+          <Link
+            href={ROUTES.dashboard}
+            className="nav-link whitespace-nowrap"
+            data-active={pathname.startsWith("/dashboard") ? "true" : "false"}
+          >
+            Dashboard
           </Link>
           <Button href={ROUTES.creatorApplication} variant="ghost" size="sm">
             Creator Application

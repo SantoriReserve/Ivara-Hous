@@ -36,13 +36,14 @@ export function PlanPurchaseSection() {
           assessment and ready to execute from Day 1.
         </p>
         <p className="mt-8 font-serif text-4xl font-normal tracking-tight">$95</p>
-        <CheckoutButton
-          assessmentId={assessmentId}
-          customerEmail={customerEmail}
-          variant="secondary"
-          size="lg"
-          className="mt-10"
-        />
+        <div className="mt-10 flex justify-center">
+          <CheckoutButton
+            assessmentId={assessmentId}
+            customerEmail={customerEmail}
+            variant="secondary"
+            size="lg"
+          />
+        </div>
         <p className="mt-8 font-sans text-[10px] uppercase tracking-nav text-white/40">
           Secure checkout via Stripe
         </p>

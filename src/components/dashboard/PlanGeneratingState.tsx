@@ -17,6 +17,14 @@ type PlanStatusResponse = {
   } | null;
 };
 
+const GENERATION_STEPS = [
+  "Analyzing your assessment profile",
+  "Building your 40-day blueprint",
+  "Personalizing daily action tasks",
+  "Preparing partnership resources",
+  "Activating your dashboard",
+] as const;
+
 export function PlanGeneratingState({
   initialStatus = "none",
   errorMessage,
@@ -25,6 +33,8 @@ export function PlanGeneratingState({
   const [status, setStatus] = useState(initialStatus);
   const [error, setError] = useState(errorMessage ?? "");
   const [isTriggering, setIsTriggering] = useState(false);
+  const [activeStep, setActiveStep] = useState(0);
+  const [elapsedSeconds, setElapsedSeconds] = useState(0);
 
   const pollStatus = useCallback(async () => {
     const response = await fetch("/api/plan/generate");
@@ -46,6 +56,8 @@ export function PlanGeneratingState({
       setIsTriggering(true);
       setStatus("generating");
       setError("");
+      setActiveStep(0);
+      setElapsedSeconds(0);
 
       try {
         const response = await fetch("/api/plan/generate", {
@@ -74,7 +86,11 @@ export function PlanGeneratingState({
 
         if (data.status === "failed") {
           setStatus("failed");
-          setError(data.error ?? "Plan generation failed");
+          setError(
+            data.error ??
+              data.message ??
+              "Plan generation failed. Please retry."
+          );
           return;
         }
 
@@ -98,8 +114,12 @@ export function PlanGeneratingState({
   );
 
   useEffect(() => {
-    if (initialStatus === "none" || initialStatus === "generating") {
-      void triggerGeneration(false);
+    if (
+      initialStatus === "none" ||
+      initialStatus === "generating" ||
+      initialStatus === "failed"
+    ) {
+      void triggerGeneration(initialStatus === "failed");
     }
   }, [initialStatus, triggerGeneration]);
 
@@ -108,10 +128,27 @@ export function PlanGeneratingState({
 
     const interval = setInterval(() => {
       void pollStatus();
-    }, 4000);
+    }, 2000);
 
     return () => clearInterval(interval);
   }, [status, pollStatus]);
+
+  useEffect(() => {
+    if (status !== "generating") return;
+
+    const stepInterval = setInterval(() => {
+      setActiveStep((prev) => Math.min(prev + 1, GENERATION_STEPS.length - 1));
+    }, 4000);
+
+    const timer = setInterval(() => {
+      setElapsedSeconds((prev) => prev + 1);
+    }, 1000);
+
+    return () => {
+      clearInterval(stepInterval);
+      clearInterval(timer);
+    };
+  }, [status]);
 
   if (status === "failed") {
     return (
@@ -131,16 +168,54 @@ export function PlanGeneratingState({
   }
 
   return (
-    <div className="border border-black/10 bg-black/5 p-8 text-center">
-      <p className="luxury-label mb-3 text-gray-muted">Building Your Plan</p>
-      <h3 className="font-serif text-2xl text-black">Generating your 40-day plan</h3>
-      <p className="mx-auto mt-4 max-w-md font-sans text-sm leading-relaxed text-gray-mid">
-        We&apos;re creating personalized daily tasks from your assessment results. This
-        usually takes one to two minutes.
+    <div className="border border-black/10 bg-black/5 p-8">
+      <p className="luxury-label mb-3 text-center text-gray-muted">Building Your System</p>
+      <h3 className="text-center font-serif text-2xl text-black">
+        Personalizing your creator operating system
+      </h3>
+      <p className="mx-auto mt-4 max-w-md text-center font-sans text-sm leading-relaxed text-gray-mid">
+        We&apos;re assembling your 40-day plan, pitch templates, and partnership resources.
+        This usually takes under 90 seconds — your dashboard will refresh automatically.
       </p>
+
+      <ul className="mx-auto mt-8 max-w-sm space-y-3">
+        {GENERATION_STEPS.map((step, index) => {
+          const isDone = index < activeStep;
+          const isCurrent = index === activeStep;
+
+          return (
+            <li
+              key={step}
+              className={`flex items-center gap-3 font-sans text-sm transition-opacity ${
+                isDone || isCurrent ? "text-black" : "text-gray-muted"
+              }`}
+            >
+              <span
+                className={`flex h-5 w-5 shrink-0 items-center justify-center text-[10px] ${
+                  isDone
+                    ? "bg-black text-white"
+                    : isCurrent
+                      ? "border border-black animate-pulse"
+                      : "border border-black/20"
+                }`}
+              >
+                {isDone ? "✓" : index + 1}
+              </span>
+              {step}
+            </li>
+          );
+        })}
+      </ul>
+
       <div className="mx-auto mt-8 h-1 w-48 overflow-hidden bg-black/10">
-        <div className="h-full w-1/2 animate-pulse bg-black" />
+        <div
+          className="h-full bg-black transition-all duration-1000"
+          style={{ width: `${Math.min(95, ((activeStep + 1) / GENERATION_STEPS.length) * 100)}%` }}
+        />
       </div>
+      <p className="mt-4 text-center font-sans text-xs text-gray-muted">
+        {elapsedSeconds}s elapsed
+      </p>
     </div>
   );
 }

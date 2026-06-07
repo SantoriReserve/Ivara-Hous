@@ -1,6 +1,7 @@
 import { getAssessmentById } from "@/lib/assessment-repository";
 import { sendPlanPdfEmail } from "@/lib/email/send-plan-pdf";
 import { hasPlanPdfBeenSent } from "@/lib/email/email-delivery-repository";
+import { PLAN_PDF_FILENAME } from "@/lib/plan/plan-pdf-copy";
 import { renderPlanPdf } from "@/lib/plan/plan-pdf-generator";
 import { getPlanGraph } from "@/lib/plan/plan-repository";
 import type { PlanGraph } from "@/lib/plan/plan-schema";
@@ -24,13 +25,8 @@ export type DeliverPlanPdfParams = {
   fullName: string;
 };
 
-export function buildPlanPdfFilename(graph: PlanGraph): string {
-  const slug = graph.instance.planSummary.title
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-|-$/g, "")
-    .slice(0, 48);
-  return `ivara-hous-40-day-plan-${slug || graph.instance.id}.pdf`;
+export function buildPlanPdfFilename(_graph?: PlanGraph): string {
+  return PLAN_PDF_FILENAME;
 }
 
 export async function generatePlanPdf(

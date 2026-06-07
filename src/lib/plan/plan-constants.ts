@@ -1,5 +1,5 @@
 export const PLAN_VERSION = "1.0.0" as const;
-export const GENERATOR_VERSION = "gen-3b.1" as const;
+export const GENERATOR_VERSION = "gen-3c.1" as const;
 
 export const PLAN_DAY_COUNT = 40;
 export const PLAN_WEEK_COUNT = 6;

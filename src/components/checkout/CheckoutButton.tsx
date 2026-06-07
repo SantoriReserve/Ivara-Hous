@@ -54,7 +54,7 @@ export function CheckoutButton({
   }
 
   return (
-    <div>
+    <div className="flex flex-col items-center">
       <Button
         type="button"
         variant={variant}

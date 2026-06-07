@@ -1,7 +1,13 @@
 import Link from "next/link";
 import { PlanGeneratingState } from "@/components/dashboard/PlanGeneratingState";
 import { TaskChecklist } from "@/components/dashboard/TaskChecklist";
+import { TodayFocusView } from "@/components/dashboard/TodayFocusView";
 import { getCurrentUser } from "@/lib/auth/require-user";
+import { getDayFocus } from "@/lib/dashboard/day-focus";
+import {
+  getLearningResponse,
+} from "@/lib/dashboard/dashboard-engagement-repository";
+import { getDashboardContext } from "@/lib/dashboard/dashboard-context";
 import { ROUTES } from "@/lib/constants";
 import { PLAN_DAY_COUNT } from "@/lib/plan/plan-constants";
 import {
@@ -25,8 +31,11 @@ export default async function TodayPage({ searchParams }: TodayPageProps) {
         <section>
           <p className="luxury-label mb-3 text-gray-muted">Today</p>
           <h2 className="font-serif text-3xl font-normal tracking-tight text-black">
-            Daily Tasks
+            Today&apos;s Actions
           </h2>
+          <p className="mt-3 font-sans text-sm text-gray-mid">
+            Complete every task today — each one moves you closer to a paid partnership.
+          </p>
         </section>
         <PlanGeneratingState
           initialStatus={plan?.status === "generating" ? "generating" : "none"}
@@ -41,8 +50,11 @@ export default async function TodayPage({ searchParams }: TodayPageProps) {
         <section>
           <p className="luxury-label mb-3 text-gray-muted">Today</p>
           <h2 className="font-serif text-3xl font-normal tracking-tight text-black">
-            Daily Tasks
+            Today&apos;s Actions
           </h2>
+          <p className="mt-3 font-sans text-sm text-gray-mid">
+            Complete every task today — each one moves you closer to a paid partnership.
+          </p>
         </section>
         <PlanGeneratingState initialStatus="failed" />
       </div>
@@ -78,6 +90,16 @@ export default async function TodayPage({ searchParams }: TodayPageProps) {
   const prevDay = dayNumber > 1 ? dayNumber - 1 : null;
   const nextDay = dayNumber < PLAN_DAY_COUNT ? dayNumber + 1 : null;
 
+  const { creatorContext } = user
+    ? await getDashboardContext(user.id)
+    : { creatorContext: null };
+
+  const dayFocus = creatorContext ? getDayFocus(creatorContext, dayNumber) : null;
+  const savedLearningResponse =
+    user && dayFocus
+      ? await getLearningResponse(user.id, dayFocus.learningAssignment.insightId, dayNumber)
+      : null;
+
   return (
     <div className="space-y-8">
       <section>
@@ -90,6 +112,9 @@ export default async function TodayPage({ searchParams }: TodayPageProps) {
             <p className="mt-3 max-w-2xl font-sans text-sm leading-relaxed text-gray-mid">
               {day.objective}
             </p>
+            <p className="mt-2 font-sans text-xs uppercase tracking-nav text-black">
+              Goal: {plan.planSummary.primaryGoal}
+            </p>
           </div>
           <p className="font-sans text-xs uppercase tracking-nav text-gray-muted">
             ~{day.estimatedMinutes} min · {day.focusArea}
@@ -101,7 +126,18 @@ export default async function TodayPage({ searchParams }: TodayPageProps) {
         </p>
       </section>
 
-      <TaskChecklist tasks={day.tasks} />
+      {dayFocus && (
+        <TodayFocusView
+          focus={dayFocus}
+          dayNumber={dayNumber}
+          savedLearningResponse={savedLearningResponse}
+        />
+      )}
+
+      <section>
+        <p className="luxury-label mb-4 text-gray-muted">Today&apos;s Tasks</p>
+        <TaskChecklist tasks={day.tasks} />
+      </section>
 
       <nav className="flex items-center justify-between border-t border-black/10 pt-6">
         {prevDay ? (

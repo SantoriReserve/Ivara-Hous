@@ -7,6 +7,7 @@ import {
 import {
   assessmentAnalysisSchema,
   clampScores,
+  deriveCollaborationTimeline,
   OPENAI_ASSESSMENT_JSON_SCHEMA,
   type AssessmentAnalysis,
 } from "@/lib/assessment-schema";
@@ -34,9 +35,20 @@ function parseAnalysisContent(content: string): AssessmentAnalysis {
     throw new Error(`Assessment schema validation failed: ${validated.error.message}`);
   }
 
+  const scores = clampScores(validated.data.scores);
+  const collaborationTimeline = deriveCollaborationTimeline(scores);
+
   return {
     ...validated.data,
-    scores: clampScores(validated.data.scores),
+    scores,
+    preview: {
+      ...validated.data.preview,
+      estimatedTimelineToFirstCollaboration: collaborationTimeline,
+    },
+    developmentFoundation: {
+      ...validated.data.developmentFoundation,
+      estimatedCollaborationTimeline: collaborationTimeline,
+    },
   };
 }
 

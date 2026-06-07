@@ -85,15 +85,15 @@ export function renderPurchaseWelcomeEmail(params: {
       preheader: "Your purchase is confirmed. Access your 40-Day Creator Development Plan dashboard.",
       headline: `Thank you, ${firstName}`,
       bodyHtml: `
-        <p>Your purchase of <strong>${params.productName}</strong> is confirmed.</p>
-        <p>Your personalized 40-Day Creator Development Plan will be generated inside your dashboard from your assessment results.</p>
-        <p><strong>Getting started:</strong></p>
+        <p>Your purchase of <strong>${params.productName}</strong> is confirmed. Your creator operating system is ready.</p>
+        <p>Your personalized 40-Day Creator Development Plan will generate inside your dashboard from your assessment — pitch templates, partnership targets, content assignments, and daily actions included.</p>
+        <p><strong>Start here:</strong></p>
         <ol style="margin:0;padding-left:20px;">
-          <li style="margin-bottom:8px;">Open your dashboard and allow a minute for your plan to generate.</li>
-          <li style="margin-bottom:8px;">Start with <strong>Today</strong> to complete your first actionable tasks.</li>
-          <li style="margin-bottom:8px;">Track progress across all 40 days at your own pace — no calendar lock.</li>
+          <li style="margin-bottom:8px;">Open your dashboard and allow about a minute for your plan to generate.</li>
+          <li style="margin-bottom:8px;">Go to <strong>Today</strong> for your focus, tasks, and first outreach actions.</li>
+          <li style="margin-bottom:8px;">Use <strong>Partnerships</strong> and <strong>Pitch Templates</strong> when you are ready to send your first messages.</li>
         </ol>
-        <p>Once your plan is ready, you will receive a separate email with your complete 40-Day Creator Development Plan as a PDF attachment.</p>
+        <p>When your plan finishes generating, you will receive a separate email with your complete 40-Day Creator Development Plan as a PDF attachment.</p>
       `,
       ctaLabel: "Open Your Dashboard",
       ctaUrl: params.dashboardUrl,
@@ -114,9 +114,9 @@ export function renderPlanPdfEmail(params: {
       preheader: "Your personalized 40-Day Creator Development Plan PDF is attached.",
       headline: `Your plan is ready, ${firstName}`,
       bodyHtml: `
-        <p>Your personalized <strong>${params.planTitle}</strong> has been generated.</p>
-        <p>The attached PDF includes your assessment summary, creator archetype and stage, personalized recommendations, and the complete 40-day plan with every day and task.</p>
-        <p>Continue tracking progress and completing tasks in your dashboard at any time.</p>
+        <p>Your personalized <strong>${params.planTitle}</strong> has been generated and is attached to this email.</p>
+        <p>The PDF includes your assessment summary, creator archetype and stage, personalized recommendations, and the complete 40-day plan with every day and task.</p>
+        <p>Your dashboard has everything you need to execute — daily focus, partnership discovery, content tracking, and conversion-ready pitch templates. Return anytime to continue at your own pace.</p>
       `,
       ctaLabel: "Open Your Dashboard",
       ctaUrl: params.dashboardUrl,

@@ -1,10 +1,6 @@
 import { getAssessmentById } from "@/lib/assessment-repository";
 import { buildPlanGenerationInput } from "@/lib/plan/plan-generation-context";
-import {
-  generateAllDayTasks,
-  generatePlanBlueprint,
-  generatePlanWeeks,
-} from "@/lib/plan/openai-plan";
+import { generatePlanFromTemplates } from "@/lib/plan/plan-template-engine";
 import {
   createGeneratingPlanInstance,
   getPlanByPurchaseId,
@@ -32,7 +28,7 @@ export async function ensurePlanForPurchase(
 
   if (existing) {
     if (existing.status === "active" || existing.status === "completed") {
-      void deliverPlanPdfIfNeeded({
+      await deliverPlanPdfIfNeeded({
         userId,
         purchaseId: purchase.id,
         planInstanceId: existing.id,
@@ -55,7 +51,7 @@ export async function ensurePlanForPurchase(
     }
 
     if (existing.status === "failed") {
-      return { status: "failed", plan: existing, error: "Previous generation failed" };
+      return retryFailedPlan(userId, purchase);
     }
   }
 
@@ -101,11 +97,7 @@ export async function ensurePlanForPurchase(
       return { status: "generating", plan: planInstance };
     }
     if (planInstance.status === "failed") {
-      return {
-        status: "failed",
-        plan: planInstance,
-        error: "Previous generation failed",
-      };
+      return retryFailedPlan(userId, purchase);
     }
   }
 
@@ -129,9 +121,7 @@ async function runGeneration(
   try {
     const input = buildPlanGenerationInput(assessment);
 
-    const blueprint = await generatePlanBlueprint(input);
-    const weeks = await generatePlanWeeks(input, blueprint);
-    const dayTasks = await generateAllDayTasks(input, blueprint);
+    const { blueprint, weeks, dayTasks } = generatePlanFromTemplates(input);
 
     await persistPlanGraph({
       planInstanceId: planInstance.id,
@@ -145,7 +135,7 @@ async function runGeneration(
       return { status: "error", message: "Plan generated but not found" };
     }
 
-    void deliverPlanPdfIfNeeded({
+    await deliverPlanPdfIfNeeded({
       userId,
       purchaseId: purchase.id,
       planInstanceId: updated.id,
@@ -155,9 +145,14 @@ async function runGeneration(
 
     return { status: "generated", plan: updated };
   } catch (error) {
+    const message = error instanceof Error ? error.message : "Plan generation failed";
+    console.error(
+      `[plan-generator] Failed for plan ${planInstance.id} purchase ${purchase.id}:`,
+      message,
+      error
+    );
     await markPlanFailed(planInstance.id);
     const failed = await getPlanByPurchaseId(purchase.id);
-    const message = error instanceof Error ? error.message : "Plan generation failed";
 
     if (failed) {
       return { status: "failed", plan: failed, error: message };

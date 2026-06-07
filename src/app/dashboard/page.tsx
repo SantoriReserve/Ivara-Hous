@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { DashboardCard } from "@/components/dashboard/DashboardCard";
 import { PlanGeneratingState } from "@/components/dashboard/PlanGeneratingState";
 import { PlanProgressRing } from "@/components/dashboard/PlanProgressRing";
 import { getProfileByUserId } from "@/lib/auth/profile-repository";
@@ -152,6 +153,54 @@ export default async function DashboardPage() {
             Purchase confirmed {new Date(purchase.purchasedAt).toLocaleDateString()}
           </p>
         )}
+      </section>
+
+      <section>
+        <p className="luxury-label mb-4 text-gray-muted">Your Creator Operating System</p>
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <DashboardCard
+            label="Start here"
+            title="Today's Tasks"
+            description={`Day ${plan.currentFocusDay}: specific actions toward "${plan.planSummary.primaryGoal}" — not reflection, execution.`}
+            href={`${ROUTES.dashboardToday}?day=${plan.currentFocusDay}`}
+            meta="Open today's assignments →"
+          />
+          <DashboardCard
+            label="Send today"
+            title="Pitch Templates"
+            description="6 warm, pre-filled pitches with a 'send today' action on each — hotels, restaurants, UGC, follow-ups."
+            href={ROUTES.dashboardPitchTemplates}
+            meta="Copy, personalize one line, send"
+          />
+          <DashboardCard
+            label="Contact today"
+            title="Partnership Opportunities"
+            description="Curated targets with a specific outreach action on every card — who to DM or email and what pitch to use."
+            href={ROUTES.dashboardPartnerships}
+            meta="Includes local + dream brands"
+          />
+          <DashboardCard
+            label="Post this week"
+            title="Content Ideas"
+            description="Step-by-step shoot lists and posting instructions — each tied to how you'll use it in a pitch."
+            href={ROUTES.dashboardContentIdeas}
+            meta="Shoot lists included"
+          />
+          <DashboardCard
+            label="Build systems"
+            title="Resources"
+            description="Media kit, outreach tracker, rate card — personalized to your stage with a 'do today' on each."
+            href={ROUTES.dashboardResources}
+            meta="6 systems, 6 actions"
+          />
+          <DashboardCard
+            label="Track momentum"
+            title="Wins & Progress"
+            description="See how close you are to your first partnership — and what to do next."
+            href={ROUTES.dashboardWins}
+            meta={`${plan.completionPercentage}% complete`}
+          />
+        </div>
       </section>
     </div>
   );

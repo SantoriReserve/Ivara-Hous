@@ -9,6 +9,7 @@ import {
   type AssessmentScores,
   type ScoreExplanations,
 } from "@/lib/assessment";
+import { getCollaborationTimeline } from "@/lib/assessment-schema";
 
 type AssessmentResultsProps = {
   assessmentId: string;
@@ -104,9 +105,11 @@ export function AssessmentResults({
             <p className="font-sans text-sm text-black">{preview.idealPartnershipTier}</p>
           </div>
           <div>
-            <p className="luxury-label mb-3">Estimated Timeline To First Hosted Stay</p>
+            <p className="luxury-label mb-3">
+              Estimated Timeline To First Collaboration Opportunity
+            </p>
             <p className="font-sans text-sm text-black">
-              {preview.estimatedTimelineToFirstHostedStay}
+              {getCollaborationTimeline(preview, scores)}
             </p>
           </div>
         </div>
@@ -152,14 +155,15 @@ export function AssessmentResults({
           dashboard, daily action steps, and instant access after purchase.
         </p>
         <p className="mt-8 font-serif text-4xl font-normal tracking-tight">$95</p>
-        <Button
-          href={`${ROUTES.creatorDevelopmentPlan}?assessmentId=${encodeURIComponent(assessmentId)}`}
-          variant="secondary"
-          size="lg"
-          className="mt-10"
-        >
-          Unlock Your 40-Day Creator Development Plan
-        </Button>
+        <div className="mt-10 flex justify-center">
+          <Button
+            href={`${ROUTES.creatorDevelopmentPlan}?assessmentId=${encodeURIComponent(assessmentId)}`}
+            variant="secondary"
+            size="lg"
+          >
+            Unlock Your 40-Day Creator Development Plan
+          </Button>
+        </div>
         <p className="mt-8 font-sans text-[10px] uppercase tracking-nav text-white/40">
           Purchase → Create account → Instant dashboard access → Plan by email → Begin Day 1
         </p>
