@@ -7,15 +7,18 @@ export function getResendApiKey(): string {
 }
 
 export function getEmailFromAddress(): string {
-  return process.env.EMAIL_FROM ?? "Ivara Hous <info@ivarahous.com>";
+  const from = process.env.EMAIL_FROM?.trim();
+  return from || "Ivara Hous <info@ivarahous.com>";
 }
 
 export function getSupportEmail(): string {
-  return process.env.SUPPORT_EMAIL ?? "info@ivarahous.com";
+  const support = process.env.SUPPORT_EMAIL?.trim();
+  return support || "info@ivarahous.com";
 }
 
 export function getReplyToEmail(): string {
-  return process.env.REPLY_TO_EMAIL ?? getSupportEmail();
+  const replyTo = process.env.REPLY_TO_EMAIL?.trim();
+  return replyTo || getSupportEmail();
 }
 
 export function isEmailConfigured(): boolean {

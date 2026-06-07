@@ -8,6 +8,7 @@ import {
   persistPlanGraph,
   planHasGeneratedContent,
 } from "@/lib/plan/plan-repository";
+import { resolveCustomerFullName } from "@/lib/plan/plan-customer-name";
 import { deliverPlanPdfIfNeeded } from "@/lib/plan/plan-pdf-delivery";
 import type { PlanInstanceRecord } from "@/lib/plan/plan-schema";
 import type { PurchaseRecord } from "@/lib/purchase-schema";
@@ -28,12 +29,13 @@ export async function ensurePlanForPurchase(
 
   if (existing) {
     if (existing.status === "active" || existing.status === "completed") {
+      const fullName = await resolveCustomerFullName(purchase);
       await deliverPlanPdfIfNeeded({
         userId,
         purchaseId: purchase.id,
         planInstanceId: existing.id,
         recipientEmail: purchase.customerEmail,
-        fullName: purchase.customerEmail,
+        fullName,
       });
       return { status: "existing", plan: existing };
     }
