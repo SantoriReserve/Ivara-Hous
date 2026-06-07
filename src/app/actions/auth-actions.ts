@@ -7,7 +7,6 @@ import {
 } from "@/lib/auth/claim-purchase";
 import { updateProfileFullName } from "@/lib/auth/profile-repository";
 import { ROUTES } from "@/lib/constants";
-import { sendPurchaseWelcomeEmail } from "@/lib/email/send-purchase-welcome";
 import { getPurchaseByCheckoutSessionId } from "@/lib/purchase-repository";
 import { getSupabaseAdmin } from "@/lib/supabase/admin";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
@@ -146,16 +145,6 @@ export async function registerAndClaimAction(formData: FormData): Promise<AuthAc
 
     if (fullName) {
       await updateProfileFullName(userId, fullName);
-    }
-
-    const purchase = await getPurchaseByCheckoutSessionId(sessionId);
-    if (purchase) {
-      void sendPurchaseWelcomeEmail({
-        to: email,
-        fullName: fullName || email,
-        userId,
-        purchaseId: purchase.id,
-      });
     }
 
     const supabase = await createSupabaseServerClient();

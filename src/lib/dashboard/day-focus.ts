@@ -1,5 +1,6 @@
 import { fillContext } from "@/lib/dashboard/fill-context";
-import { getContentIdeas } from "@/lib/dashboard/content-ideas";
+import { pickDefaultContentIdea } from "@/lib/dashboard/content-daily";
+import { getContentIdeaById, getContentIdeas } from "@/lib/dashboard/content-ideas";
 import { getPitchTemplates } from "@/lib/dashboard/pitch-templates";
 import type { CreatorContext } from "@/lib/plan/plan-generation-context";
 import { ROUTES } from "@/lib/constants";
@@ -10,6 +11,7 @@ export type DayFocus = {
     title: string;
     description: string;
     href: string;
+    ideaId?: string;
   };
   outreachAssignment: {
     title: string;
@@ -103,13 +105,20 @@ function dayPhase(dayNumber: number): "foundation" | "content" | "outreach" | "s
   return "scale";
 }
 
-export function getDayFocus(ctx: CreatorContext, dayNumber: number): DayFocus {
+export function getDayFocus(
+  ctx: CreatorContext,
+  dayNumber: number,
+  options?: { pinnedIdeaId?: string | null }
+): DayFocus {
   const stage = stageKey(ctx.stage);
   const phase = dayPhase(dayNumber);
   const base = STAGE_FOCUS[stage] ?? STAGE_FOCUS.emerging;
   const ideas = getContentIdeas(ctx);
   const pitches = getPitchTemplates(ctx);
-  const contentPick = ideas[dayNumber % ideas.length];
+  const pinnedIdea = options?.pinnedIdeaId
+    ? getContentIdeaById(ctx, options.pinnedIdeaId)
+    : null;
+  const contentPick = pinnedIdea ?? pickDefaultContentIdea(ideas, dayNumber);
   const pitchPick =
     pitches.find((p) => p.id === "boutique-hotel") ??
     pitches.find((p) => p.id === "hosted-stay") ??
@@ -140,6 +149,7 @@ export function getDayFocus(ctx: CreatorContext, dayNumber: number): DayFocus {
                     title: contentPick.title,
                     description: contentPick.deliverable,
                     href: `${ROUTES.dashboardContentIdeas}#${contentPick.id}`,
+                    ideaId: contentPick.id,
                   }
                 : base.contentAssignment!,
           }

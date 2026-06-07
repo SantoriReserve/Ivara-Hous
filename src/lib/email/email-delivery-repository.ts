@@ -31,13 +31,15 @@ export async function recordEmailDelivery(params: {
   }
 }
 
+const PURCHASE_COMPLETE_EMAIL_TYPES = ["purchase_complete", "plan_pdf", "purchase_welcome"];
+
 export async function hasPlanPdfBeenSent(planInstanceId: string): Promise<boolean> {
   const supabase = getSupabaseAdmin();
   const { data, error } = await supabase
     .from("email_deliveries")
     .select("id")
     .eq("plan_instance_id", planInstanceId)
-    .eq("email_type", "plan_pdf")
+    .in("email_type", PURCHASE_COMPLETE_EMAIL_TYPES)
     .eq("status", "sent")
     .limit(1)
     .maybeSingle();

@@ -5,6 +5,8 @@ import { TodayFocusView } from "@/components/dashboard/TodayFocusView";
 import { getCurrentUser } from "@/lib/auth/require-user";
 import { getDayFocus } from "@/lib/dashboard/day-focus";
 import {
+  getContentDailyPin,
+  getContentProgressForUser,
   getLearningResponse,
 } from "@/lib/dashboard/dashboard-engagement-repository";
 import { getDashboardContext } from "@/lib/dashboard/dashboard-context";
@@ -94,11 +96,19 @@ export default async function TodayPage({ searchParams }: TodayPageProps) {
     ? await getDashboardContext(user.id)
     : { creatorContext: null };
 
-  const dayFocus = creatorContext ? getDayFocus(creatorContext, dayNumber) : null;
+  const pinnedIdeaId = user ? await getContentDailyPin(user.id, dayNumber) : null;
+  const dayFocus = creatorContext
+    ? getDayFocus(creatorContext, dayNumber, { pinnedIdeaId })
+    : null;
   const savedLearningResponse =
     user && dayFocus
       ? await getLearningResponse(user.id, dayFocus.learningAssignment.insightId, dayNumber)
       : null;
+  const contentProgress = user ? await getContentProgressForUser(user.id) : [];
+  const contentIdeaId = dayFocus?.contentAssignment.ideaId;
+  const contentPosted = contentIdeaId
+    ? (contentProgress.find((p) => p.ideaId === contentIdeaId)?.posted ?? false)
+    : false;
 
   return (
     <div className="space-y-8">
@@ -131,6 +141,7 @@ export default async function TodayPage({ searchParams }: TodayPageProps) {
           focus={dayFocus}
           dayNumber={dayNumber}
           savedLearningResponse={savedLearningResponse}
+          contentPosted={contentPosted}
         />
       )}
 

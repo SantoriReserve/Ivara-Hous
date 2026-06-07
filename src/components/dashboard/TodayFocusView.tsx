@@ -1,17 +1,20 @@
 import Link from "next/link";
 import { LearningInsightForm } from "@/components/dashboard/LearningInsightForm";
+import { TodayContentFocus } from "@/components/dashboard/TodayContentFocus";
 import type { DayFocus } from "@/lib/dashboard/day-focus";
 
 type TodayFocusViewProps = {
   focus: DayFocus;
   dayNumber: number;
   savedLearningResponse?: string | null;
+  contentPosted?: boolean;
 };
 
 export function TodayFocusView({
   focus,
   dayNumber,
   savedLearningResponse,
+  contentPosted = false,
 }: TodayFocusViewProps) {
   return (
     <div className="space-y-6">
@@ -23,11 +26,13 @@ export function TodayFocusView({
       </section>
 
       <div className="grid gap-4 md:grid-cols-2">
-        <FocusCard
-          label="Content"
+        <TodayContentFocus
+          dayNumber={dayNumber}
+          ideaId={focus.contentAssignment.ideaId}
           title={focus.contentAssignment.title}
           description={focus.contentAssignment.description}
           href={focus.contentAssignment.href}
+          isPosted={contentPosted}
         />
         <FocusCard
           label="Outreach"

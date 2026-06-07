@@ -13,59 +13,70 @@ export function Header() {
 
   return (
     <header className="sticky top-0 z-50 border-b border-black/10 bg-white/95 backdrop-blur-sm">
-      <div className="luxury-container flex h-[4.5rem] items-center justify-between lg:h-24">
-        <div className="flex min-w-0 flex-1 items-center gap-10 lg:gap-16 xl:gap-20">
-          <Link
-            href={ROUTES.home}
-            className="shrink-0 font-serif text-xl tracking-tight text-black transition-opacity duration-luxury hover:opacity-60 sm:text-2xl"
-            onClick={closeMenu}
-          >
-            {SITE_NAME}
-          </Link>
+      {/* Desktop — three-column grid prevents nav/actions overlap */}
+      <div className="luxury-container hidden h-24 items-center lg:grid lg:grid-cols-[minmax(10rem,auto)_minmax(0,1fr)_auto] lg:gap-x-6 xl:gap-x-10">
+        <Link
+          href={ROUTES.home}
+          className="shrink-0 font-serif text-xl tracking-tight text-black transition-opacity duration-luxury hover:opacity-60 sm:text-2xl"
+        >
+          {SITE_NAME}
+        </Link>
 
-          <nav
-            className="hidden min-w-0 items-center gap-8 xl:gap-10 lg:flex"
-            aria-label="Main navigation"
-          >
-            {NAV_LINKS.map((link) => (
-              <Link
-                key={link.href}
-                href={link.href}
-                className="nav-link whitespace-nowrap"
-                data-active={pathname === link.href ? "true" : "false"}
-              >
-                {link.label}
-              </Link>
-            ))}
-          </nav>
-        </div>
+        <nav
+          className="flex min-w-0 items-center justify-center gap-5 xl:gap-8"
+          aria-label="Main navigation"
+        >
+          {NAV_LINKS.map((link) => (
+            <Link
+              key={link.href}
+              href={link.href}
+              className="nav-link shrink-0 whitespace-nowrap"
+              data-active={pathname === link.href ? "true" : "false"}
+            >
+              {link.label}
+            </Link>
+          ))}
+        </nav>
 
-        <div className="hidden shrink-0 items-center gap-5 lg:flex">
-          <Link
-            href={ROUTES.login}
-            className="nav-link whitespace-nowrap"
-            data-active={pathname === ROUTES.login ? "true" : "false"}
-          >
-            Sign In
-          </Link>
-          <Link
-            href={ROUTES.dashboard}
-            className="nav-link whitespace-nowrap"
-            data-active={pathname.startsWith("/dashboard") ? "true" : "false"}
-          >
-            Dashboard
-          </Link>
-          <Button href={ROUTES.creatorApplication} variant="ghost" size="sm">
+        <div className="flex shrink-0 items-center justify-end gap-3 xl:gap-4">
+          <div className="flex items-center gap-4 border-r border-black/10 pr-4 xl:gap-5 xl:pr-5">
+            <Link
+              href={ROUTES.login}
+              className="nav-link whitespace-nowrap"
+              data-active={pathname === ROUTES.login ? "true" : "false"}
+            >
+              Sign In
+            </Link>
+            <Link
+              href={ROUTES.dashboard}
+              className="nav-link whitespace-nowrap"
+              data-active={pathname.startsWith("/dashboard") ? "true" : "false"}
+            >
+              Dashboard
+            </Link>
+          </div>
+          <Button href={ROUTES.creatorApplication} variant="ghost" size="sm" className="shrink-0">
             Creator Application
           </Button>
-          <Button href={ROUTES.partnerWithUs} variant="primary" size="sm">
+          <Button href={ROUTES.partnerWithUs} variant="primary" size="sm" className="shrink-0">
             Partner With Us
           </Button>
         </div>
+      </div>
+
+      {/* Mobile / tablet below lg */}
+      <div className="luxury-container flex h-[4.5rem] items-center justify-between lg:hidden">
+        <Link
+          href={ROUTES.home}
+          className="shrink-0 font-serif text-xl tracking-tight text-black transition-opacity duration-luxury hover:opacity-60 sm:text-2xl"
+          onClick={closeMenu}
+        >
+          {SITE_NAME}
+        </Link>
 
         <button
           type="button"
-          className="flex h-11 w-11 items-center justify-center lg:hidden"
+          className="flex h-11 w-11 items-center justify-center"
           aria-expanded={menuOpen}
           aria-label={menuOpen ? "Close menu" : "Open menu"}
           onClick={() => setMenuOpen(!menuOpen)}

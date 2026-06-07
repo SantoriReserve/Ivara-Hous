@@ -101,25 +101,48 @@ export function renderPurchaseWelcomeEmail(params: {
   };
 }
 
-export function renderPlanPdfEmail(params: {
+export function renderPurchaseCompleteEmail(params: {
   fullName: string;
+  productName: string;
   planTitle: string;
   dashboardUrl: string;
 }): { subject: string; html: string } {
   const firstName = params.fullName.trim().split(" ")[0] || "Creator";
 
   return {
-    subject: `Your 40-Day Creator Development Plan — ${SITE_NAME}`,
+    subject: `Your ${params.productName} is ready — ${SITE_NAME}`,
     html: renderBrandedEmail({
-      preheader: "Your personalized 40-Day Creator Development Plan PDF is attached.",
-      headline: `Your plan is ready, ${firstName}`,
+      preheader:
+        "Purchase confirmed. Your dashboard is live and your 40-Day Creator Development Plan PDF is attached.",
+      headline: `Thank you, ${firstName}`,
       bodyHtml: `
-        <p>Your personalized <strong>${params.planTitle}</strong> has been generated and is attached to this email.</p>
-        <p>The PDF includes your assessment summary, creator archetype and stage, personalized recommendations, and the complete 40-day plan with every day and task.</p>
-        <p>Your dashboard has everything you need to execute — daily focus, partnership discovery, content tracking, and conversion-ready pitch templates. Return anytime to continue at your own pace.</p>
+        <p>Your purchase of <strong>${params.productName}</strong> is confirmed — and your personalized <strong>${params.planTitle}</strong> is attached to this email.</p>
+        <p>The PDF includes your assessment summary, creator archetype and stage, readiness scores, strategy roadmap, and the complete 40-day plan with every day and task.</p>
+        <p><strong>Inside your dashboard:</strong></p>
+        <ul style="margin:0;padding-left:20px;">
+          <li style="margin-bottom:8px;"><strong>Today</strong> — daily focus, tasks, and learning insights</li>
+          <li style="margin-bottom:8px;"><strong>Partnerships</strong> — location search with real hospitality targets</li>
+          <li style="margin-bottom:8px;"><strong>Pitch Templates</strong> — conversion-ready outreach copy</li>
+          <li style="margin-bottom:8px;"><strong>Content Ideas</strong> — assignments with production tracking</li>
+        </ul>
+        <p>Your creator operating system is ready to execute. Open your dashboard to begin Day 1.</p>
       `,
       ctaLabel: "Open Your Dashboard",
       ctaUrl: params.dashboardUrl,
     }),
   };
+}
+
+/** @deprecated Use renderPurchaseCompleteEmail — kept for reference only */
+export function renderPlanPdfEmail(params: {
+  fullName: string;
+  planTitle: string;
+  dashboardUrl: string;
+}): { subject: string; html: string } {
+  return renderPurchaseCompleteEmail({
+    fullName: params.fullName,
+    productName: "40-Day Creator Development Plan",
+    planTitle: params.planTitle,
+    dashboardUrl: params.dashboardUrl,
+  });
 }

@@ -1,16 +1,20 @@
 "use client";
 
-import Image from "next/image";
-import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
-import { updateContentIdeaProgress } from "@/app/actions/dashboard-engagement-actions";
+import {
+  markContentComplete,
+  pinContentToToday,
+  updateContentIdeaProgress,
+} from "@/app/actions/dashboard-engagement-actions";
+import { FallbackImage } from "@/components/dashboard/FallbackImage";
 import type { ContentIdeaProgress } from "@/lib/dashboard/dashboard-engagement-repository";
 import type { ContentIdea } from "@/lib/dashboard/content-ideas";
-import { getContentFormatImage } from "@/lib/dashboard/opportunity-images";
+import { CONTENT_IMAGE_FALLBACK, getContentIdeaImage } from "@/lib/dashboard/opportunity-images";
 
 type ContentIdeasViewProps = {
   ideas: ContentIdea[];
   initialProgress: ContentIdeaProgress[];
+  currentFocusDay?: number;
 };
 
 const FORMAT_COLORS: Record<string, string> = {
@@ -61,8 +65,11 @@ function completionLabel(progress: ContentIdeaProgress): string {
   return "Not started";
 }
 
-export function ContentIdeasView({ ideas, initialProgress }: ContentIdeasViewProps) {
-  const router = useRouter();
+export function ContentIdeasView({
+  ideas,
+  initialProgress,
+  currentFocusDay = 1,
+}: ContentIdeasViewProps) {
   const [isPending, startTransition] = useTransition();
   const [localProgress, setLocalProgress] = useState<Record<string, ContentIdeaProgress>>(() =>
     Object.fromEntries(
@@ -78,26 +85,39 @@ export function ContentIdeasView({ ideas, initialProgress }: ContentIdeasViewPro
     const current = localProgress[ideaId] ?? progressForIdea(ideaId, initialProgress);
     const updated = { ...current, [key]: checked };
 
-    if (key === "filmed" && checked) updated.planned = true;
-    if (key === "edited" && checked) {
-      updated.planned = true;
-      updated.filmed = true;
-    }
-    if (key === "posted" && checked) {
-      updated.planned = true;
-      updated.filmed = true;
-      updated.edited = true;
-    }
-
     setLocalProgress((prev) => ({ ...prev, [ideaId]: updated }));
 
     startTransition(async () => {
       const result = await updateContentIdeaProgress(updated);
       if (!result.success) {
         setLocalProgress((prev) => ({ ...prev, [ideaId]: current }));
-        return;
       }
-      router.refresh();
+    });
+  };
+
+  const handlePinToToday = (ideaId: string) => {
+    startTransition(async () => {
+      await pinContentToToday(currentFocusDay, ideaId);
+    });
+  };
+
+  const handleMarkComplete = (ideaId: string) => {
+    const completed: ContentIdeaProgress = {
+      ideaId,
+      planned: true,
+      filmed: true,
+      edited: true,
+      posted: true,
+    };
+    setLocalProgress((prev) => ({ ...prev, [ideaId]: completed }));
+    startTransition(async () => {
+      const result = await markContentComplete(ideaId);
+      if (!result.success) {
+        setLocalProgress((prev) => ({
+          ...prev,
+          [ideaId]: progressForIdea(ideaId, initialProgress),
+        }));
+      }
     });
   };
 
@@ -107,7 +127,8 @@ export function ContentIdeasView({ ideas, initialProgress }: ContentIdeasViewPro
     <div className="space-y-8">
       <div className="flex flex-wrap items-center justify-between gap-4 border border-black/10 p-4">
         <p className="font-sans text-sm text-gray-mid">
-          Track every assignment from plan to publish — completion feeds your Wins & Progress.
+          {ideas.length}+ personalized assignments — pin any idea to Today, track production, and
+          completion updates Wins & Progress automatically.
         </p>
         <p className="font-sans text-xs uppercase tracking-nav text-black">
           {postedCount} of {ideas.length} posted
@@ -125,14 +146,13 @@ export function ContentIdeasView({ ideas, initialProgress }: ContentIdeasViewPro
               id={idea.id}
               className="flex flex-col overflow-hidden border border-black/10"
             >
-              <div className="relative aspect-[3/2] w-full bg-black/5">
-                <Image
-                  src={getContentFormatImage(idea.format)}
-                  alt={`${idea.format} inspiration — ${idea.title}`}
-                  fill
-                  className="object-cover"
-                  sizes="(max-width: 768px) 100vw, 50vw"
-                />
+              <FallbackImage
+                src={getContentIdeaImage(idea.id, idea.format)}
+                fallbackSrc={CONTENT_IMAGE_FALLBACK}
+                alt={`${idea.format} inspiration — ${idea.title}`}
+                aspectClassName="relative aspect-[3/2] w-full bg-black/5"
+                sizes="(max-width: 768px) 100vw, 50vw"
+              >
                 <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
                 <div className="absolute bottom-4 left-4 right-4 flex items-end justify-between gap-2">
                   <span
@@ -144,7 +164,7 @@ export function ContentIdeasView({ ideas, initialProgress }: ContentIdeasViewPro
                     {completionLabel(progress)}
                   </span>
                 </div>
-              </div>
+              </FallbackImage>
 
               <div className="flex flex-1 flex-col p-6">
                 <div className="flex items-center justify-between gap-3">
@@ -156,6 +176,27 @@ export function ContentIdeasView({ ideas, initialProgress }: ContentIdeasViewPro
                 <p className="mt-3 font-sans text-sm leading-relaxed text-gray-mid">
                   {idea.description}
                 </p>
+
+                <div className="mt-4 flex flex-wrap gap-2">
+                  <button
+                    type="button"
+                    onClick={() => handlePinToToday(idea.id)}
+                    disabled={isPending}
+                    className="border border-black px-3 py-1.5 font-sans text-[10px] uppercase tracking-nav text-black transition-opacity hover:opacity-60 disabled:opacity-40"
+                  >
+                    Add to Today&apos;s Plan
+                  </button>
+                  {!progress.posted && (
+                    <button
+                      type="button"
+                      onClick={() => handleMarkComplete(idea.id)}
+                      disabled={isPending}
+                      className="bg-black px-3 py-1.5 font-sans text-[10px] uppercase tracking-nav text-white transition-opacity hover:opacity-80 disabled:opacity-40"
+                    >
+                      Mark Complete
+                    </button>
+                  )}
+                </div>
 
                 <div className="mt-4 border border-black/10 p-4">
                   <p className="luxury-label mb-3 text-gray-muted">Production tracking</p>

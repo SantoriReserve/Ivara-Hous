@@ -3,10 +3,12 @@ import { getCurrentUser } from "@/lib/auth/require-user";
 import { getDashboardContext } from "@/lib/dashboard/dashboard-context";
 import { getContentProgressForUser } from "@/lib/dashboard/dashboard-engagement-repository";
 import { getContentIdeas } from "@/lib/dashboard/content-ideas";
+import { getActivePlanForUser } from "@/lib/plan/plan-repository";
 
 export default async function ContentIdeasPage() {
   const user = await getCurrentUser();
   const { creatorContext } = user ? await getDashboardContext(user.id) : { creatorContext: null };
+  const plan = user ? await getActivePlanForUser(user.id) : null;
 
   if (!creatorContext) {
     return (
@@ -35,7 +37,11 @@ export default async function ContentIdeasPage() {
           and how to use it in your next pitch toward {creatorContext.dreamPartnerships}.
         </p>
       </section>
-      <ContentIdeasView ideas={ideas} initialProgress={initialProgress} />
+      <ContentIdeasView
+        ideas={ideas}
+        initialProgress={initialProgress}
+        currentFocusDay={plan?.currentFocusDay ?? 1}
+      />
     </div>
   );
 }

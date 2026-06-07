@@ -10,6 +10,9 @@ export type PartnershipOpportunity = {
   description: string;
   website: string;
   instagram: string;
+  address?: string;
+  contactEmail?: string | null;
+  contactPerson?: string | null;
   contactWhere: string;
   outreachType: string;
   matchReason: string;
@@ -23,6 +26,8 @@ export type PartnershipOpportunity = {
   difficultyScore: number;
   valueScore: number;
   tierLabel: string;
+  partnershipTier?: 1 | 2 | 3;
+  source?: "curated" | "discovered";
   recommendedPitch: string;
   searchLocation?: string;
 };

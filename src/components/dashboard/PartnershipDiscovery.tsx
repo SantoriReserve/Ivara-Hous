@@ -1,13 +1,12 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, useTransition } from "react";
+import { searchPartnershipsByLocation } from "@/app/actions/partnership-search-actions";
 import { PartnershipOpportunitiesView } from "@/components/dashboard/PartnershipOpportunitiesView";
 import type { PartnershipOpportunity } from "@/lib/dashboard/partnership-opportunities";
-import { searchPartnershipOpportunities } from "@/lib/dashboard/partnership-search";
-import type { CreatorContext } from "@/lib/plan/plan-generation-context";
 
 type PartnershipDiscoveryProps = {
-  creatorContext: CreatorContext;
+  creatorContext: { niche: string; location: string };
   curatedOpportunities: PartnershipOpportunity[];
   defaultCountry?: string;
   defaultState?: string;
@@ -45,13 +44,26 @@ export function PartnershipDiscovery({
   const [city, setCity] = useState(defaults.city);
   const [hasSearched, setHasSearched] = useState(false);
   const [searchResults, setSearchResults] = useState<PartnershipOpportunity[]>([]);
+  const [searchError, setSearchError] = useState<string | null>(null);
+  const [isPending, startTransition] = useTransition();
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
-    const results = searchPartnershipOpportunities(creatorContext, { country, state, city });
-    setSearchResults(results);
-    setHasSearched(true);
+    setSearchError(null);
+    startTransition(async () => {
+      const result = await searchPartnershipsByLocation({ country, state, city });
+      if (!result.success) {
+        setSearchError(result.error);
+        setSearchResults([]);
+      } else {
+        setSearchResults(result.opportunities);
+      }
+      setHasSearched(true);
+    });
   };
+
+  const curatedCount = searchResults.filter((o) => o.source === "curated").length;
+  const discoveredCount = searchResults.filter((o) => o.source === "discovered").length;
 
   return (
     <div className="space-y-10">
@@ -59,8 +71,9 @@ export function PartnershipDiscovery({
         <p className="luxury-label mb-2 text-gray-muted">Opportunity Discovery</p>
         <h3 className="font-serif text-2xl text-black">Search by location</h3>
         <p className="mt-2 max-w-2xl font-sans text-sm text-gray-mid">
-          Generate partnership targets for any market — boutique hotels, villas, restaurants,
-          cafés, and tourism brands matched to your {creatorContext.niche} positioning.
+          Search any city worldwide — curated premium targets plus live hospitality discovery
+          for hotels, restaurants, cafés, and experiences matched to your {creatorContext.niche}{" "}
+          positioning.
         </p>
 
         <form onSubmit={handleSearch} className="mt-6 grid gap-4 sm:grid-cols-3">
@@ -97,9 +110,10 @@ export function PartnershipDiscovery({
           <div className="sm:col-span-3">
             <button
               type="submit"
-              className="bg-black px-8 py-3 font-sans text-xs uppercase tracking-nav text-white transition-opacity hover:opacity-80"
+              disabled={isPending}
+              className="bg-black px-8 py-3 font-sans text-xs uppercase tracking-nav text-white transition-opacity hover:opacity-80 disabled:opacity-50"
             >
-              Discover Opportunities
+              {isPending ? "Discovering…" : "Discover Opportunities"}
             </button>
           </div>
         </form>
@@ -113,14 +127,24 @@ export function PartnershipDiscovery({
               {searchResults.length} opportunities in {[city, state, country].filter(Boolean).join(", ")}
             </h3>
             <p className="mt-2 font-sans text-sm text-gray-mid">
-              Each card includes contact details, match reasoning, and a recommended pitch.
+              {curatedCount > 0 && `${curatedCount} curated premium targets`}
+              {curatedCount > 0 && discoveredCount > 0 && " · "}
+              {discoveredCount > 0 && `${discoveredCount} live global discoveries`}
+              {searchResults.length === 0 && "No results — try adding a city name."}
             </p>
+            {searchError && (
+              <p className="mt-2 font-sans text-sm text-red-700">{searchError}</p>
+            )}
           </div>
           {searchResults.length > 0 ? (
-            <PartnershipOpportunitiesView opportunities={searchResults} showScores />
+            <PartnershipOpportunitiesView
+              opportunities={searchResults}
+              showScores
+              groupByTier
+            />
           ) : (
             <p className="font-sans text-sm text-gray-mid">
-              Enter at least a city, state, or country to generate opportunities.
+              Enter a city to search globally. Country-only searches use curated regional data.
             </p>
           )}
         </section>

@@ -1,4 +1,5 @@
 import { fillContext } from "@/lib/dashboard/fill-context";
+import { generateExpandedContentIdeas } from "@/lib/dashboard/content-ideas-expanded";
 import {
   CONTENT_IDEA_FRAMEWORKS,
   type ContentIdeaFormat,
@@ -30,8 +31,25 @@ function nicheMatches(ctx: CreatorContext, niches?: string[]): boolean {
   return niches.some((n) => niche.includes(n) || n.includes(niche.split(" ")[0] ?? ""));
 }
 
+const ALL_CONTENT_FRAMEWORKS = (() => {
+  const expanded = generateExpandedContentIdeas();
+  const seen = new Set<string>();
+  const merged = [...CONTENT_IDEA_FRAMEWORKS];
+  for (const idea of expanded) {
+    if (!seen.has(idea.id)) {
+      seen.add(idea.id);
+      merged.push(idea);
+    }
+  }
+  return merged;
+})();
+
+export function getAllContentIdeaIds(): string[] {
+  return ALL_CONTENT_FRAMEWORKS.map((idea) => idea.id);
+}
+
 export function getContentIdeas(ctx: CreatorContext): ContentIdea[] {
-  return CONTENT_IDEA_FRAMEWORKS.filter(
+  return ALL_CONTENT_FRAMEWORKS.filter(
     (idea) => stageMatches(ctx, idea.stages) && nicheMatches(ctx, idea.niches)
   ).map((idea) => ({
     id: idea.id,

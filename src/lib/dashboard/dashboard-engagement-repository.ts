@@ -6,6 +6,7 @@ function isMissingEngagementTableError(message: string): boolean {
     lower.includes("does not exist") ||
     lower.includes("schema cache") ||
     lower.includes("content_idea_progress") ||
+    lower.includes("content_daily_pins") ||
     lower.includes("learning_insight_responses")
   );
 }
@@ -69,6 +70,48 @@ export async function upsertContentProgress(
   if (error) {
     if (isMissingEngagementTableError(error.message)) return;
     throw new Error(`Failed to save content progress: ${error.message}`);
+  }
+}
+
+export async function getContentDailyPin(
+  userId: string,
+  dayNumber: number
+): Promise<string | null> {
+  const supabase = getSupabaseAdmin();
+  const { data, error } = await supabase
+    .from("content_daily_pins")
+    .select("idea_id")
+    .eq("user_id", userId)
+    .eq("day_number", dayNumber)
+    .maybeSingle();
+
+  if (error) {
+    if (isMissingEngagementTableError(error.message)) return null;
+    throw new Error(`Failed to load daily content pin: ${error.message}`);
+  }
+
+  return data?.idea_id ?? null;
+}
+
+export async function pinContentDaily(
+  userId: string,
+  dayNumber: number,
+  ideaId: string
+): Promise<void> {
+  const supabase = getSupabaseAdmin();
+  const { error } = await supabase.from("content_daily_pins").upsert(
+    {
+      user_id: userId,
+      day_number: dayNumber,
+      idea_id: ideaId,
+      updated_at: new Date().toISOString(),
+    },
+    { onConflict: "user_id,day_number" }
+  );
+
+  if (error) {
+    if (isMissingEngagementTableError(error.message)) return;
+    throw new Error(`Failed to pin daily content: ${error.message}`);
   }
 }
 

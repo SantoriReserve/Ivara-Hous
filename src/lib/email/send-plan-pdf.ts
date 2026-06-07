@@ -1,7 +1,8 @@
 import { ROUTES } from "@/lib/constants";
-import { renderPlanPdfEmail } from "@/lib/email/templates";
+import { renderPurchaseCompleteEmail } from "@/lib/email/templates";
 import { sendBrandedEmail } from "@/lib/email/send-email";
 import { getSiteUrl } from "@/lib/stripe";
+import { CREATOR_DEVELOPMENT_PLAN_PRODUCT } from "@/lib/stripe-product";
 
 export async function sendPlanPdfEmail(params: {
   to: string;
@@ -14,8 +15,9 @@ export async function sendPlanPdfEmail(params: {
   pdfFilename: string;
 }): Promise<{ sent: boolean; reason?: string }> {
   const dashboardUrl = `${getSiteUrl().replace(/\/$/, "")}${ROUTES.dashboard}`;
-  const { subject, html } = renderPlanPdfEmail({
+  const { subject, html } = renderPurchaseCompleteEmail({
     fullName: params.fullName,
+    productName: CREATOR_DEVELOPMENT_PLAN_PRODUCT.name,
     planTitle: params.planTitle,
     dashboardUrl,
   });
@@ -24,7 +26,7 @@ export async function sendPlanPdfEmail(params: {
     to: params.to,
     subject,
     html,
-    emailType: "plan_pdf",
+    emailType: "purchase_complete",
     userId: params.userId,
     purchaseId: params.purchaseId,
     planInstanceId: params.planInstanceId,
