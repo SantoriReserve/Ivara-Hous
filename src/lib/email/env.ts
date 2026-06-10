@@ -16,6 +16,11 @@ export function getSupportEmail(): string {
   return support || "info@ivarahous.com";
 }
 
+export function getOwnerNotificationEmail(): string {
+  const owner = process.env.OWNER_NOTIFICATION_EMAIL?.trim();
+  return owner || getSupportEmail();
+}
+
 export function getReplyToEmail(): string {
   const replyTo = process.env.REPLY_TO_EMAIL?.trim();
   return replyTo || getSupportEmail();

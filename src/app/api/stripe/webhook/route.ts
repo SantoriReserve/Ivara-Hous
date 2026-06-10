@@ -1,3 +1,4 @@
+import { notifyOwnerPurchase } from "@/lib/email/owner-notifications";
 import { saveCompletedPurchaseFromCheckoutSession } from "@/lib/purchase-repository";
 import { getStripe } from "@/lib/stripe";
 import type Stripe from "stripe";
@@ -49,6 +50,15 @@ export async function POST(request: Request) {
       customerEmail: purchase.customerEmail,
       amountCents: purchase.amountCents,
     });
+
+    try {
+      const ownerResult = await notifyOwnerPurchase(purchase);
+      if (!ownerResult.sent && ownerResult.reason !== "duplicate") {
+        console.warn("[stripe/webhook] Owner purchase notification skipped:", ownerResult.reason);
+      }
+    } catch (ownerNotificationError) {
+      console.error("[stripe/webhook] Owner notification failed:", ownerNotificationError);
+    }
 
     return new Response("ok", { status: 200 });
   } catch (error) {

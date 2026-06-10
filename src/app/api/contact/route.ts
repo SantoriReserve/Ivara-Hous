@@ -1,4 +1,5 @@
 import { apiError, apiSuccess } from "@/lib/api-response";
+import { notifyOwnerContactInquiry } from "@/lib/email/owner-notifications";
 import {
   sendContactFormEmails,
   type ContactFormPayload,
@@ -30,10 +31,20 @@ export async function POST(request: Request) {
 
     const emailResult = await sendContactFormEmails(payload);
 
+    let storageResult: Awaited<ReturnType<typeof recordContactInquiry>> | undefined;
     try {
-      await recordContactInquiry(payload);
+      storageResult = await recordContactInquiry(payload);
     } catch (storageError) {
       console.error("[contact] Supabase storage failed:", storageError);
+    }
+
+    try {
+      await notifyOwnerContactInquiry({
+        ...payload,
+        recordId: storageResult?.id,
+      });
+    } catch (ownerNotificationError) {
+      console.error("[contact] Owner notification failed:", ownerNotificationError);
     }
 
     return apiSuccess({

@@ -5,7 +5,13 @@ export type AutomatedTestMatchReason =
   | "linked_test_purchase"
   | "linked_test_user";
 
-const AUTOMATED_EMAIL_DOMAINS = new Set(["anyjazminmatos.com", "example.com", "test.com"]);
+const AUTOMATED_EMAIL_DOMAINS = new Set([
+  "anyjazminmatos.com",
+  "example.com",
+  "test.com",
+  "owner-live.ivarahous.com",
+  "owner-verify.ivarahous.com",
+]);
 
 const AUTOMATED_LOCAL_PATTERNS = [
   /^e2e\+/,
@@ -16,11 +22,17 @@ const AUTOMATED_LOCAL_PATTERNS = [
   /^crm-final-/,
   /^crm-verify-/,
   /^crm-live-/,
+  /^owner-live-/,
+  /^owner-verify-/,
+  /^owner-final-/,
   /prod-e2e/,
   /release-e2e/,
   /crm-final-/,
   /crm-verify-/,
   /crm-live-/,
+  /owner-live-/,
+  /owner-verify-/,
+  /owner-final-/,
 ];
 
 const AUTOMATED_NAME_PATTERNS = [
@@ -33,6 +45,9 @@ const AUTOMATED_NAME_PATTERNS = [
   /^crm final test/i,
   /^crm verify/i,
   /^crm live /i,
+  /^owner live /i,
+  /^owner verify /i,
+  /^owner final /i,
   /^public api verify$/i,
 ];
 

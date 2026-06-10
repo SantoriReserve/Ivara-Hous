@@ -20,6 +20,8 @@ type EmailLayoutParams = {
   bodyHtml: string;
   ctaLabel?: string;
   ctaUrl?: string;
+  secondaryCtaLabel?: string;
+  secondaryCtaUrl?: string;
   footerNote?: string;
   eyebrow?: string;
 };
@@ -51,12 +53,25 @@ function renderFooter(supportEmail: string, footerNote?: string): string {
   </tr>`;
 }
 
+function renderCtaButton(label: string, url: string, variant: "primary" | "secondary"): string {
+  const isPrimary = variant === "primary";
+  return `<a href="${url}" style="display:inline-block;${
+    isPrimary
+      ? `background:${PALETTE.black};color:${PALETTE.white};`
+      : `background:transparent;color:${PALETTE.charcoal};border:1px solid ${PALETTE.charcoal};`
+  }text-decoration:none;font-family:Helvetica,Arial,sans-serif;font-size:11px;letter-spacing:0.14em;text-transform:uppercase;padding:15px 28px;border-radius:0;margin-right:12px;margin-bottom:12px;">
+    ${label}
+  </a>`;
+}
+
 export function renderBrandedEmail({
   preheader,
   headline,
   bodyHtml,
   ctaLabel,
   ctaUrl,
+  secondaryCtaLabel,
+  secondaryCtaUrl,
   footerNote,
   eyebrow,
 }: EmailLayoutParams): string {
@@ -73,13 +88,14 @@ export function renderBrandedEmail({
         </td>
       </tr>`;
 
+  const hasPrimaryCta = Boolean(ctaLabel && ctaUrl);
+  const hasSecondaryCta = Boolean(secondaryCtaLabel && secondaryCtaUrl);
   const ctaBlock =
-    ctaLabel && ctaUrl
+    hasPrimaryCta || hasSecondaryCta
       ? `<tr>
           <td style="padding:32px 32px 8px;" align="left">
-            <a href="${ctaUrl}" style="display:inline-block;background:${PALETTE.black};color:${PALETTE.white};text-decoration:none;font-family:Helvetica,Arial,sans-serif;font-size:11px;letter-spacing:0.14em;text-transform:uppercase;padding:17px 34px;border-radius:0;">
-              ${ctaLabel}
-            </a>
+            ${hasPrimaryCta && ctaLabel && ctaUrl ? renderCtaButton(ctaLabel, ctaUrl, "primary") : ""}
+            ${hasSecondaryCta && secondaryCtaLabel && secondaryCtaUrl ? renderCtaButton(secondaryCtaLabel, secondaryCtaUrl, "secondary") : ""}
           </td>
         </tr>`
       : "";
