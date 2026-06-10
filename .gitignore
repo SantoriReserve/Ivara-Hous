@@ -24,6 +24,11 @@ node-v*/
 # e2e artifacts
 /artifacts/
 
+# local-only verification scripts (not shipped)
+scripts/final-live-crm-test.mts
+scripts/capture-admin-screenshots.mts
+scripts/verify-admin-*.mts
+
 # misc
 .DS_Store
 *.pem
