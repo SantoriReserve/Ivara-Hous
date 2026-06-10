@@ -3,6 +3,7 @@ import {
   sendContactFormEmails,
   type ContactFormPayload,
 } from "@/lib/email/send-contact-confirmation";
+import { recordContactInquiry } from "@/lib/forms/form-submission-repository";
 
 function parseContactPayload(body: Record<string, unknown>): ContactFormPayload | null {
   const name = typeof body.name === "string" ? body.name.trim() : "";
@@ -28,6 +29,12 @@ export async function POST(request: Request) {
     }
 
     const emailResult = await sendContactFormEmails(payload);
+
+    try {
+      await recordContactInquiry(payload);
+    } catch (storageError) {
+      console.error("[contact] Supabase storage failed:", storageError);
+    }
 
     return apiSuccess({
       message: "Contact message received",

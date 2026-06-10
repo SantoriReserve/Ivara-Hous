@@ -21,6 +21,9 @@
 # local node runtime (optional)
 node-v*/
 
+# e2e artifacts
+/artifacts/
+
 # misc
 .DS_Store
 *.pem
