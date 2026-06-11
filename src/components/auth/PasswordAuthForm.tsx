@@ -110,7 +110,11 @@ export function PasswordAuthForm({
           required
           autoComplete="email"
           readOnly={Boolean(defaultEmail)}
-          className={defaultEmail ? "cursor-default bg-gray-light" : undefined}
+          className={
+            defaultEmail
+              ? "luxury-input cursor-default bg-gray-light"
+              : "luxury-input"
+          }
         />
 
         <FormField
@@ -120,7 +124,19 @@ export function PasswordAuthForm({
           required
           autoComplete={mode === "register" ? "new-password" : "current-password"}
           minLength={8}
+          className="luxury-input"
         />
+
+        {mode === "login" && (
+          <div className="-mt-2 flex justify-end">
+            <Link
+              href={ROUTES.loginForgotPassword}
+              className="font-sans text-xs text-gray-mid transition-colors duration-luxury ease-luxury hover:text-black hover:underline hover:underline-offset-4"
+            >
+              Forgot Password?
+            </Link>
+          </div>
+        )}
 
         {mode === "register" && (
           <FormField
@@ -130,6 +146,7 @@ export function PasswordAuthForm({
             required
             autoComplete="new-password"
             minLength={8}
+            className="luxury-input"
           />
         )}
 

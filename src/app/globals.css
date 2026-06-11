@@ -57,7 +57,21 @@
   }
 
   .luxury-input {
-    @apply w-full border border-black/15 bg-white px-5 py-3.5 font-sans text-sm font-normal text-black transition-colors duration-luxury ease-luxury placeholder:text-gray-muted focus:border-black focus:outline-none;
+    @apply w-full appearance-none border border-black/15 bg-white px-5 py-3.5 font-sans text-sm font-normal text-black transition-colors duration-luxury ease-luxury placeholder:text-gray-muted hover:border-black/25 focus:border-black focus:outline-none disabled:cursor-not-allowed disabled:opacity-60;
+  }
+
+  input.luxury-input {
+    @apply h-[52px] rounded-none leading-normal;
+    -webkit-appearance: none;
+  }
+
+  input.luxury-input:-webkit-autofill,
+  input.luxury-input:-webkit-autofill:hover,
+  input.luxury-input:-webkit-autofill:focus {
+    -webkit-box-shadow: 0 0 0 1000px #ffffff inset;
+    -webkit-text-fill-color: #000000;
+    caret-color: #000000;
+    transition: background-color 9999s ease-out 0s;
   }
 
   .luxury-textarea {

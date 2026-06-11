@@ -13,11 +13,12 @@ type LoginPageProps = {
   searchParams: Promise<{
     next?: string;
     error?: string;
+    reset?: string;
   }>;
 };
 
 export default async function LoginPage({ searchParams }: LoginPageProps) {
-  const { next, error } = await searchParams;
+  const { next, error, reset } = await searchParams;
   const nextPath = next?.startsWith("/") ? next : ROUTES.dashboard;
 
   return (
@@ -29,6 +30,14 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
       />
       <section className="py-section sm:py-section-lg">
         <div className="luxury-container">
+          {reset === "success" && (
+            <p
+              className="mx-auto mb-8 max-w-md border border-black/10 bg-white px-5 py-4 text-center font-sans text-sm text-black"
+              role="status"
+            >
+              Your password has been updated. Sign in with your new password below.
+            </p>
+          )}
           {error === "auth_callback_failed" && (
             <p className="mx-auto mb-8 max-w-md text-center font-sans text-sm text-red-600" role="alert">
               Sign-in could not be completed. Use your email and password below.

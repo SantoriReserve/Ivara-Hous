@@ -14,7 +14,7 @@ import {
   getCheckoutSessionEmail,
   isValidCreatorDevelopmentPurchaseSession,
 } from "@/lib/stripe-checkout-session";
-import { getStripe } from "@/lib/stripe";
+import { getStripe, getSiteUrl } from "@/lib/stripe";
 
 const MIN_PASSWORD_LENGTH = 8;
 
@@ -196,4 +196,87 @@ export async function signInAction(formData: FormData): Promise<AuthActionResult
 
   const safeNext = nextPath.startsWith("/") ? nextPath : ROUTES.dashboard;
   redirect(safeNext);
+}
+
+export async function requestPasswordResetAction(
+  formData: FormData
+): Promise<AuthActionResult> {
+  const email = normalizeEmail(String(formData.get("email") ?? ""));
+
+  if (!email) {
+    return { success: false, error: "Email is required." };
+  }
+
+  try {
+    const siteUrl = getSiteUrl().replace(/\/$/, "");
+    const redirectTo = `${siteUrl}/auth/callback?next=${encodeURIComponent(ROUTES.loginResetPassword)}`;
+    const supabase = await createSupabaseServerClient();
+    const { error } = await supabase.auth.resetPasswordForEmail(email, { redirectTo });
+
+    if (error) {
+      console.error("[auth] Password reset email failed:", error.message);
+      return {
+        success: false,
+        error: "We could not send a reset email. Please try again in a few minutes.",
+      };
+    }
+  } catch (error) {
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "Password reset request failed.",
+    };
+  }
+
+  return { success: true };
+}
+
+export async function updatePasswordAction(formData: FormData): Promise<AuthActionResult> {
+  const password = String(formData.get("password") ?? "");
+  const confirmPassword = String(formData.get("confirmPassword") ?? "");
+
+  if (!password) {
+    return { success: false, error: "Password is required." };
+  }
+
+  const passwordError = validatePassword(password);
+  if (passwordError) {
+    return { success: false, error: passwordError };
+  }
+
+  if (password !== confirmPassword) {
+    return { success: false, error: "Passwords do not match." };
+  }
+
+  try {
+    const supabase = await createSupabaseServerClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (!user) {
+      return {
+        success: false,
+        error: "Your reset link has expired. Request a new password reset email.",
+      };
+    }
+
+    const { error } = await supabase.auth.updateUser({ password });
+
+    if (error) {
+      console.error("[auth] Password update failed:", error.message);
+      return {
+        success: false,
+        error: "Could not save your new password. Request a new reset link and try again.",
+      };
+    }
+
+    await supabase.auth.signOut();
+  } catch (error) {
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "Password update failed.",
+    };
+  }
+
+  redirect(`${ROUTES.login}?reset=success`);
 }

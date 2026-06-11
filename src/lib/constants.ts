@@ -11,6 +11,8 @@ export const ROUTES = {
   creatorDevelopmentPlanSuccess: "/creator-development/plan/success",
   creatorDevelopmentPlanCancel: "/creator-development/plan/cancel",
   login: "/login",
+  loginForgotPassword: "/login/forgot-password",
+  loginResetPassword: "/login/reset-password",
   claim: "/claim",
   dashboard: "/dashboard",
   dashboardToday: "/dashboard/today",
