@@ -44,7 +44,7 @@ export default function AboutPage() {
         description="Ivara Hous bridges luxury hospitality and creator excellence — building a platform where every collaboration elevates the standard of travel storytelling."
       />
 
-      <section className="py-section sm:py-section-lg">
+      <section className="py-section sm:py-section-md lg:py-section-xl">
         <div className="luxury-container">
           <div className="grid gap-16 lg:grid-cols-2 lg:gap-24">
             <LuxuryImage
@@ -76,7 +76,7 @@ export default function AboutPage() {
         </div>
       </section>
 
-      <section className="border-t border-black/10 bg-gray-light py-section sm:py-section-lg">
+      <section className="border-t border-black/10 bg-gray-light py-section sm:py-section-md lg:py-section-xl">
         <div className="luxury-container">
           <SectionHeading
             label="Values"
@@ -97,7 +97,7 @@ export default function AboutPage() {
         </div>
       </section>
 
-      <section className="border-t border-black/10 py-section sm:py-section-lg">
+      <section className="border-t border-black/10 py-section sm:py-section-md lg:py-section-xl">
         <div className="luxury-container text-center">
           <SectionHeading
             title="Join the Platform"

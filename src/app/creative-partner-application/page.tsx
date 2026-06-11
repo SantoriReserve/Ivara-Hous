@@ -15,7 +15,7 @@ export default function CreativePartnerApplicationPage() {
         title="Creative Partner Application"
         description="Photographers, videographers, production teams, and editors — join our vetted roster serving luxury travel and hospitality clients."
       />
-      <section className="py-section sm:py-section-lg">
+      <section className="py-section sm:py-section-md lg:py-section-xl">
         <div className="luxury-container max-w-3xl">
           <CreativePartnerForm />
         </div>

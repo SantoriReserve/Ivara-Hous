@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
 import { PageHero } from "@/components/layout/PageHero";
+import { PlanFaq } from "@/components/checkout/PlanFaq";
 import { PlanPurchaseSection } from "@/components/checkout/PlanPurchaseSection";
+import { PlanTrustSignals } from "@/components/checkout/PlanTrustSignals";
 
 export const metadata: Metadata = {
   title: "40-Day Creator Development Plan",
@@ -43,7 +45,7 @@ export default function CreatorDevelopmentPlanPage() {
         description="A premium, automated digital product built from your assessment results — delivering a personalized dashboard, daily action plan, and creator growth system you can begin the moment you purchase."
       />
 
-      <section className="py-section sm:py-section-lg">
+      <section className="overflow-x-hidden py-section sm:py-section-md lg:py-section-xl">
         <div className="luxury-container max-w-3xl">
           <p className="luxury-label mb-5">What You Receive</p>
           <h2 className="font-serif text-3xl font-normal tracking-tight text-black sm:text-4xl">
@@ -69,7 +71,7 @@ export default function CreatorDevelopmentPlanPage() {
         </div>
       </section>
 
-      <section className="border-t border-black/10 bg-gray-light py-section sm:py-section-lg">
+      <section className="overflow-x-hidden border-t border-black/10 bg-gray-light py-section sm:py-section-md lg:py-section-xl">
         <div className="luxury-container max-w-3xl">
           <p className="luxury-label mb-5">How It Works</p>
           <h2 className="font-serif text-3xl font-normal tracking-tight text-black sm:text-4xl">
@@ -95,9 +97,12 @@ export default function CreatorDevelopmentPlanPage() {
         </div>
       </section>
 
+      <PlanTrustSignals />
+      <PlanFaq />
+
       <Suspense
         fallback={
-          <section className="border-t border-black/10 bg-black py-section text-white sm:py-section-lg">
+          <section className="border-t border-black/10 bg-black py-section text-white sm:py-section-md lg:py-section-xl">
             <div className="luxury-container max-w-3xl text-center font-sans text-sm text-white/65">
               Loading checkout…
             </div>

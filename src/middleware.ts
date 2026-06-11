@@ -23,22 +23,47 @@ function hasAuthCallbackParams(request: NextRequest): boolean {
   );
 }
 
+function isRecentRecoverySentAt(recoverySentAt: string | undefined): boolean {
+  if (!recoverySentAt) {
+    return false;
+  }
+
+  const sentAt = Date.parse(recoverySentAt);
+  return !Number.isNaN(sentAt) && Date.now() - sentAt < 60 * 60 * 1000;
+}
+
 export async function middleware(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
 
   if (hasAuthCallbackParams(request) && pathname !== ROUTES.authCallback) {
     const callbackUrl = request.nextUrl.clone();
-    if (
-      !callbackUrl.searchParams.has("next") &&
-      pathname === ROUTES.loginResetPassword
-    ) {
-      callbackUrl.searchParams.set("next", ROUTES.loginResetPassword);
+    if (!callbackUrl.searchParams.has("next")) {
+      const isRecovery =
+        callbackUrl.searchParams.get("type") === "recovery" ||
+        pathname === ROUTES.loginResetPassword ||
+        pathname === ROUTES.home;
+      if (isRecovery) {
+        callbackUrl.searchParams.set("next", ROUTES.loginResetPassword);
+      }
     }
     callbackUrl.pathname = ROUTES.authCallback;
     return NextResponse.redirect(callbackUrl);
   }
 
   const { supabase, supabaseResponse } = await updateSupabaseSession(request);
+
+  if (pathname === ROUTES.home) {
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (isRecentRecoverySentAt(user?.recovery_sent_at)) {
+      const resetUrl = request.nextUrl.clone();
+      resetUrl.pathname = ROUTES.loginResetPassword;
+      resetUrl.search = "";
+      return NextResponse.redirect(resetUrl);
+    }
+  }
 
   const requiresDashboardAuth =
     pathname === ROUTES.dashboard || pathname.startsWith(`${ROUTES.dashboard}/`);

@@ -5,10 +5,11 @@
 @layer base {
   html {
     scroll-behavior: smooth;
+    overflow-x: hidden;
   }
 
   body {
-    @apply bg-white font-sans font-normal text-black antialiased;
+    @apply overflow-x-hidden bg-white font-sans font-normal text-black antialiased;
     font-feature-settings: "kern" 1, "liga" 1, "calt" 1;
   }
 
@@ -57,7 +58,7 @@
   }
 
   .luxury-input {
-    @apply w-full appearance-none border border-black/15 bg-white px-5 py-3.5 font-sans text-sm font-normal text-black transition-colors duration-luxury ease-luxury placeholder:text-gray-muted hover:border-black/25 focus:border-black focus:outline-none disabled:cursor-not-allowed disabled:opacity-60;
+    @apply box-border w-full max-w-full appearance-none border border-black/15 bg-white px-5 py-3.5 font-sans text-sm font-normal text-black transition-colors duration-luxury ease-luxury placeholder:text-gray-muted hover:border-black/25 focus:border-black focus:outline-none disabled:cursor-not-allowed disabled:opacity-60;
   }
 
   input.luxury-input {

@@ -41,7 +41,7 @@ export default async function AccessDeniedPage({ searchParams }: AccessDeniedPag
         title="Dashboard Access Required"
         description={description}
       />
-      <section className="py-section text-center sm:py-section-lg">
+      <section className="py-section text-center sm:py-section-md lg:py-section-xl">
         <div className="luxury-container flex flex-col items-center justify-center gap-4 sm:flex-row">
           {!user && (
             <Button href={ROUTES.login} variant="primary" size="lg">

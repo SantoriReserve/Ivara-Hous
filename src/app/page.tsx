@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { AssessmentPreview } from "@/components/home/AssessmentPreview";
+import { CreatorDevelopmentPlan } from "@/components/home/CreatorDevelopmentPlan";
 import { CreatorNetwork } from "@/components/home/CreatorNetwork";
 import { FinalCta } from "@/components/home/FinalCta";
 import { Hero } from "@/components/home/Hero";
@@ -21,6 +22,7 @@ export default function HomePage() {
       <Hero />
       <Intro />
       <AssessmentPreview />
+      <CreatorDevelopmentPlan />
       <ServicesOverview />
       <CreatorNetwork />
       <TravelCoordination />

@@ -54,6 +54,23 @@ function redirectWithAuthCookies(
   return redirectResponse;
 }
 
+/** Supabase verify may append recovery tokens in the hash; the server cannot read them. */
+function recoveryHashHandoffResponse(targetPath: string): NextResponse {
+  const html = `<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="utf-8"><title>Redirecting…</title></head>
+<body>
+<script>
+window.location.replace(${JSON.stringify(targetPath)} + (window.location.hash || ""));
+</script>
+</body>
+</html>`;
+
+  return new NextResponse(html, {
+    headers: { "Content-Type": "text/html; charset=utf-8" },
+  });
+}
+
 export async function GET(request: NextRequest) {
   const { searchParams, origin } = new URL(request.url);
   const code = searchParams.get("code");
@@ -63,6 +80,10 @@ export async function GET(request: NextRequest) {
   const sessionId = searchParams.get("session_id");
 
   if (!code && !(tokenHash && type)) {
+    if (next === ROUTES.loginResetPassword) {
+      return recoveryHashHandoffResponse(`${origin}${ROUTES.loginResetPassword}`);
+    }
+
     return NextResponse.redirect(`${origin}${ROUTES.login}?error=auth_callback_failed`);
   }
 

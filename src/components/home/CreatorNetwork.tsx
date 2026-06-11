@@ -6,7 +6,7 @@ import { SITE_IMAGES } from "@/lib/images";
 
 export function CreatorNetwork() {
   return (
-    <section className="border-t border-black/10 bg-white py-section sm:py-section-lg">
+    <section className="border-t border-black/10 bg-white py-section sm:py-section-md lg:py-section-xl">
       <div className="luxury-container">
         <div className="grid items-center gap-16 lg:grid-cols-2 lg:gap-24">
           <div className="grid grid-cols-2 gap-5 lg:order-1">

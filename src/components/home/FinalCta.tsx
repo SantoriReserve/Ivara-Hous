@@ -3,7 +3,7 @@ import { ROUTES } from "@/lib/constants";
 
 export function FinalCta() {
   return (
-    <section className="border-t border-black/10 bg-black py-section text-white sm:py-section-lg">
+    <section className="border-t border-black/10 bg-black py-section text-white sm:py-section-md lg:py-section-xl">
       <div className="luxury-container text-center">
         <p className="luxury-label mb-6 text-white/50">Get Started</p>
         <h2 className="luxury-heading mx-auto max-w-3xl text-3xl text-white sm:text-4xl lg:text-5xl">

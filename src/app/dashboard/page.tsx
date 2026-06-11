@@ -63,6 +63,16 @@ export default async function DashboardPage() {
   const currentWeek = graph?.weeks.find(
     (w) => plan.currentFocusDay >= w.startDay && plan.currentFocusDay <= w.endDay
   );
+  const focusDay = graph?.days.find((d) => d.dayNumber === plan.currentFocusDay);
+  const completedTaskIds = new Set(
+    graph?.completions
+      .filter((c) => c.status === "completed")
+      .map((c) => c.planDayTaskId) ?? []
+  );
+  const nextTask = graph?.tasks
+    .filter((task) => task.planDayId === focusDay?.id)
+    .sort((a, b) => a.taskOrder - b.taskOrder)
+    .find((task) => task.isRequired && !completedTaskIds.has(task.id));
 
   const showCongratsBanner =
     plan.completionPercentage >= 100 && !profile?.congratulationsSeenAt;
@@ -96,10 +106,13 @@ export default async function DashboardPage() {
 
       <section className="grid gap-8 md:grid-cols-[auto_1fr] md:items-center">
         <PlanProgressRing percentage={plan.completionPercentage} />
-        <div className="space-y-4">
+        <div className="space-y-5">
           <div>
             <p className="luxury-label mb-1 text-gray-muted">Progress</p>
-            <p className="font-sans text-sm text-black">
+            <p className="font-serif text-3xl font-normal tracking-tight text-black">
+              {plan.completionPercentage}%
+            </p>
+            <p className="mt-2 font-sans text-sm text-black">
               {plan.completedRequiredTasks} of {plan.totalRequiredTasks} required tasks
               completed
             </p>
@@ -107,9 +120,23 @@ export default async function DashboardPage() {
               Day {plan.currentFocusDay} of 40 — work at your own pace, no deadlines
             </p>
           </div>
+          {nextTask && (
+            <div className="border border-black/10 bg-gray-light p-5">
+              <p className="luxury-label mb-2 text-gray-muted">Next Recommended Action</p>
+              <p className="font-sans text-sm text-black">{nextTask.title}</p>
+              <p className="mt-2 font-sans text-xs leading-relaxed text-gray-mid">
+                {nextTask.instruction}
+              </p>
+            </div>
+          )}
+          {focusDay && (
+            <p className="font-sans text-xs text-gray-muted">
+              Today&apos;s focus: {focusDay.title}
+            </p>
+          )}
           <Link
             href={`${ROUTES.dashboardToday}?day=${plan.currentFocusDay}`}
-            className="inline-block border border-black bg-black px-6 py-3 font-sans text-xs uppercase tracking-nav text-white transition-opacity hover:opacity-80"
+            className="inline-block w-full border border-black bg-black px-6 py-3 text-center font-sans text-xs uppercase tracking-nav text-white transition-opacity hover:opacity-80 sm:w-auto"
           >
             Continue Today
           </Link>

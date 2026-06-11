@@ -13,7 +13,7 @@ const highlights = [
 
 export function AssessmentPreview() {
   return (
-    <section className="border-y border-black/10 bg-gray-light py-section sm:py-section-lg">
+    <section className="border-y border-black/10 bg-gray-light py-section sm:py-section-md lg:py-section-xl">
       <div className="luxury-container">
         <div className="grid items-center gap-16 lg:grid-cols-2 lg:gap-24">
           <LuxuryImage
@@ -38,14 +38,24 @@ export function AssessmentPreview() {
                 </li>
               ))}
             </ul>
-            <Button
-              href={ROUTES.creatorDevelopment}
-              variant="primary"
-              size="lg"
-              className="mt-12"
-            >
-              Begin Assessment
-            </Button>
+            <div className="mt-12 flex flex-col gap-4 sm:flex-row">
+              <Button
+                href={ROUTES.creatorDevelopmentPlan}
+                variant="primary"
+                size="lg"
+                className="w-full sm:w-auto"
+              >
+                View Development Plan
+              </Button>
+              <Button
+                href={ROUTES.creatorDevelopment}
+                variant="outline"
+                size="lg"
+                className="w-full sm:w-auto"
+              >
+                Take Assessment
+              </Button>
+            </div>
           </div>
         </div>
       </div>

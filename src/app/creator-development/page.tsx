@@ -16,8 +16,8 @@ export default function CreatorDevelopmentPage() {
         title="Creator Development Assessment"
         description="A strategic assessment for aspiring travel creators — evaluate your positioning, portfolio strength, and partnership potential, then receive a complimentary preview of your personalized evaluation."
       />
-      <section className="py-section sm:py-section-lg">
-        <div className="luxury-container max-w-2xl">
+      <section className="overflow-x-hidden py-section sm:py-section-md lg:py-section-xl">
+        <div className="luxury-container max-w-2xl px-6 sm:px-10">
           <AssessmentForm />
         </div>
       </section>

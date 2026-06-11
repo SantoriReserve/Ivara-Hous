@@ -132,7 +132,7 @@ function ConfirmationLayout({
         description={description}
         dark
       />
-      <section className="border-t border-black/10 bg-black py-section text-white sm:py-section-lg">
+      <section className="border-t border-black/10 bg-black py-section text-white sm:py-section-md lg:py-section-xl">
         <div className="luxury-container max-w-3xl text-center">
           {children}
           <div className="mt-12 flex flex-col items-stretch justify-center gap-3 sm:flex-row sm:flex-wrap sm:items-center">

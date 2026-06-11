@@ -33,7 +33,7 @@ export default async function ClaimPage({ searchParams }: ClaimPageProps) {
           title="Checkout Session Required"
           description="Start from your purchase confirmation page to create your dashboard account."
         />
-        <section className="py-section text-center sm:py-section-lg">
+        <section className="py-section text-center sm:py-section-md lg:py-section-xl">
           <div className="luxury-container">
             <Button href={ROUTES.creatorDevelopmentPlan} variant="primary" size="lg">
               Return To Plan Overview
@@ -56,7 +56,7 @@ export default async function ClaimPage({ searchParams }: ClaimPageProps) {
             title="Purchase Not Confirmed"
             description="We could not verify your checkout session. Complete payment first, then return here from your confirmation page."
           />
-          <section className="py-section text-center sm:py-section-lg">
+          <section className="py-section text-center sm:py-section-md lg:py-section-xl">
             <div className="luxury-container">
               <Button href={ROUTES.creatorDevelopmentPlan} variant="primary" size="lg">
                 Return To Plan Overview
@@ -90,7 +90,7 @@ export default async function ClaimPage({ searchParams }: ClaimPageProps) {
             title="Account Already Linked"
             description="This purchase is already connected to a dashboard account. Sign in to continue."
           />
-          <section className="py-section text-center sm:py-section-lg">
+          <section className="py-section text-center sm:py-section-md lg:py-section-xl">
             <div className="luxury-container">
               <Button href={ROUTES.login} variant="primary" size="lg">
                 Sign In
@@ -108,7 +108,7 @@ export default async function ClaimPage({ searchParams }: ClaimPageProps) {
           title="Access Your Dashboard"
           description="Create your account with the same email from checkout. You will be signed in and taken directly to your dashboard."
         />
-        <section className="py-section sm:py-section-lg">
+        <section className="py-section sm:py-section-md lg:py-section-xl">
           <div className="luxury-container">
             <PasswordAuthForm
               mode="register"

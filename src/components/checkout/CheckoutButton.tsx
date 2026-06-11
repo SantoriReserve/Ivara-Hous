@@ -54,7 +54,7 @@ export function CheckoutButton({
   }
 
   return (
-    <div className="flex flex-col items-center">
+    <div className="flex w-full flex-col items-stretch sm:items-center">
       <Button
         type="button"
         variant={variant}

@@ -31,8 +31,10 @@ const config: Config = {
         nav: "0.14em",
       },
       spacing: {
-        section: "7.5rem",
-        "section-lg": "10rem",
+        section: "4rem",
+        "section-md": "7.5rem",
+        "section-lg": "6rem",
+        "section-xl": "10rem",
       },
       transitionDuration: {
         luxury: "500ms",

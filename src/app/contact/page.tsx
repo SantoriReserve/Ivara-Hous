@@ -15,7 +15,7 @@ export default function ContactPage() {
         title="Let's Connect"
         description="For partnerships, creator inquiries, travel coordination, or general questions — we would love to hear from you."
       />
-      <section className="py-section sm:py-section-lg">
+      <section className="py-section sm:py-section-md lg:py-section-xl">
         <div className="luxury-container max-w-2xl">
           <ContactForm />
         </div>

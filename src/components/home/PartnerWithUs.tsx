@@ -7,7 +7,7 @@ export function PartnerWithUs() {
   return (
     <section
       id="partner-with-us"
-      className="border-t border-black/10 bg-white py-section sm:py-section-lg"
+      className="border-t border-black/10 bg-white py-section sm:py-section-md lg:py-section-xl"
     >
       <div className="luxury-container">
         <div className="grid items-center gap-16 lg:grid-cols-12 lg:gap-20">

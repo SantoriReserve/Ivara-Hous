@@ -44,7 +44,10 @@ const FIELD_CONFIG: Record<
       { value: "100k-plus", label: "100K+" },
     ],
   },
-  portfolioLink: { label: "Current Portfolio Link", type: "url" },
+  portfolioLink: {
+    label: "Current Portfolio",
+    placeholder: "URL, N/A, None, or describe your portfolio status",
+  },
   travelExperience: {
     label: "Travel Experience",
     as: "textarea",
@@ -161,8 +164,8 @@ export function AssessmentForm() {
   }
 
   return (
-    <div>
-      <div className="mb-12 border-b border-black/10 pb-10">
+    <div className="max-w-full overflow-x-hidden">
+      <div className="mb-8 border-b border-black/10 pb-8 sm:mb-12 sm:pb-10">
         <div className="flex items-center justify-between">
           <p className="luxury-label">
             Step {step + 1} of {ASSESSMENT_STEPS.length}
@@ -235,15 +238,15 @@ export function AssessmentForm() {
           </p>
         )}
 
-        <div className="flex flex-col gap-5 border-t border-black/10 pt-10 sm:flex-row sm:justify-between">
+        <div className="flex flex-col-reverse gap-4 border-t border-black/10 pt-8 sm:flex-row sm:justify-between sm:pt-10">
           {step > 0 ? (
-            <Button type="button" variant="outline" size="md" onClick={goBack}>
+            <Button type="button" variant="outline" size="md" className="w-full sm:w-auto" onClick={goBack}>
               Back
             </Button>
           ) : (
-            <span />
+            <span className="hidden sm:block" />
           )}
-          <Button type="submit" variant="primary" size="lg" disabled={isLoading}>
+          <Button type="submit" variant="primary" size="lg" className="w-full sm:w-auto" disabled={isLoading}>
             {isLoading
               ? "Processing…"
               : isLastStep

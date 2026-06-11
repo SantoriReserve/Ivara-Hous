@@ -30,7 +30,7 @@ export default async function AdminAccessDeniedPage() {
             : "Enter the owner access code at /admin/gate, or sign in with an authorized business email."
         }
       />
-      <section className="py-section sm:py-section-lg">
+      <section className="py-section sm:py-section-md lg:py-section-xl">
         <div className="luxury-container mx-auto max-w-2xl space-y-6">
           {diagnostics ? (
             <div className="border border-black/10 p-6 font-sans text-sm text-gray-mid">

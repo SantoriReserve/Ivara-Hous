@@ -28,7 +28,7 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
         title="Sign In"
         description="Sign in with the email and password you created after purchase."
       />
-      <section className="py-section sm:py-section-lg">
+      <section className="py-section sm:py-section-md lg:py-section-xl">
         <div className="luxury-container">
           {reset === "success" && (
             <p

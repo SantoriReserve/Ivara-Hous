@@ -23,7 +23,7 @@ export function PlanPurchaseSection() {
   return (
     <section
       id="purchase"
-      className="border-t border-black/10 bg-black py-section text-white sm:py-section-lg"
+      className="border-t border-black/10 bg-black py-section text-white sm:py-section-md lg:py-section-xl"
     >
       <div className="luxury-container max-w-3xl text-center">
         <p className="luxury-label mb-5 text-white/50">Ready To Begin</p>
@@ -42,17 +42,18 @@ export function PlanPurchaseSection() {
             customerEmail={customerEmail}
             variant="secondary"
             size="lg"
+            className="w-full max-w-md sm:w-auto"
           />
         </div>
         <p className="mt-8 font-sans text-[10px] uppercase tracking-nav text-white/40">
           Secure checkout via Stripe
         </p>
-        <p className="mt-6">
+        <p className="mt-6 flex justify-center">
           <Button
             href={ROUTES.creatorDevelopment}
             variant="outline"
             size="md"
-            className="border-white text-white hover:bg-white hover:text-black"
+            className="w-full max-w-md border-white text-white hover:bg-white hover:text-black sm:w-auto"
           >
             Take The Assessment First
           </Button>

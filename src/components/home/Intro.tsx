@@ -2,7 +2,7 @@ import { SectionHeading } from "@/components/ui/SectionHeading";
 
 export function Intro() {
   return (
-    <section className="py-section sm:py-section-lg">
+    <section className="py-section sm:py-section-md lg:py-section-xl">
       <div className="luxury-container">
         <div className="grid gap-16 lg:grid-cols-12 lg:gap-24">
           <div className="lg:col-span-5">

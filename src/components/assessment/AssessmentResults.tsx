@@ -19,6 +19,16 @@ type AssessmentResultsProps = {
   answers: Partial<AssessmentAnswers>;
 };
 
+const PLAN_BENEFITS = [
+  "Personalized dashboard",
+  "Daily action plan",
+  "Portfolio development",
+  "Partnership outreach templates",
+  "Creator positioning strategy",
+  "Resources and tools",
+  "Instant access",
+] as const;
+
 function ScoreBar({
   label,
   value,
@@ -30,9 +40,9 @@ function ScoreBar({
 }) {
   return (
     <div className="space-y-4">
-      <div className="flex items-end justify-between gap-6">
+      <div className="flex items-end justify-between gap-4">
         <p className="font-sans text-sm text-black">{label}</p>
-        <p className="font-serif text-3xl font-normal tracking-tight text-black">
+        <p className="font-serif text-2xl font-normal tracking-tight text-black sm:text-3xl">
           {value}
         </p>
       </div>
@@ -74,12 +84,13 @@ export function AssessmentResults({
   answers,
 }: AssessmentResultsProps) {
   const entries = Object.entries(scores) as [keyof AssessmentScores, number][];
+  const planHref = `${ROUTES.creatorDevelopmentPlan}?assessmentId=${encodeURIComponent(assessmentId)}`;
 
   return (
-    <div className="space-y-12">
-      <div className="border border-black/10 bg-white p-10 sm:p-14">
+    <div className="max-w-full space-y-10 overflow-x-hidden sm:space-y-12">
+      <div className="border border-black/10 bg-white p-6 sm:p-10 lg:p-14">
         <p className="luxury-label mb-5">Assessment Complete</p>
-        <h2 className="luxury-heading text-3xl sm:text-4xl">
+        <h2 className="luxury-heading text-2xl sm:text-4xl">
           Your Creator Development Preview
         </h2>
         {answers.fullName && (
@@ -133,7 +144,7 @@ export function AssessmentResults({
         </div>
       </div>
 
-      <div className="space-y-12 border border-black/10 bg-gray-light p-10 sm:p-14">
+      <div className="space-y-10 border border-black/10 bg-gray-light p-6 sm:space-y-12 sm:p-10 lg:p-14">
         {entries.map(([key, value]) => (
           <ScoreBar
             key={key}
@@ -144,24 +155,39 @@ export function AssessmentResults({
         ))}
       </div>
 
-      <div className="border border-black bg-black p-12 text-center text-white sm:p-16">
-        <p className="luxury-label mb-5 text-white/50">Next Step</p>
+      <div className="border border-black bg-black p-8 text-center text-white sm:p-12 lg:p-16">
+        <p className="luxury-label mb-5 text-white/50">Recommended Next Step</p>
         <h3 className="font-serif text-2xl font-normal tracking-tight sm:text-3xl">
-          Learn More About The 40-Day Creator Development Plan
+          40-Day Creator Development Plan
         </h3>
         <p className="mx-auto mt-6 max-w-lg text-sm leading-[1.75] text-white/65">
-          Your assessment preview is complete. Explore the full 40-Day Creator
-          Development Plan — a premium automated digital product with a personalized
-          dashboard, daily action steps, and instant access after purchase.
+          Your assessment preview is complete. Unlock the full personalized system —
+          dashboard, daily actions, outreach templates, and instant access after
+          purchase.
         </p>
         <p className="mt-8 font-serif text-4xl font-normal tracking-tight">$95</p>
-        <div className="mt-10 flex justify-center">
+        <ul className="mx-auto mt-10 max-w-md space-y-3 text-left">
+          {PLAN_BENEFITS.map((item) => (
+            <li
+              key={item}
+              className="flex items-start gap-3 font-sans text-sm text-white/80"
+            >
+              <span className="mt-2.5 h-px w-5 shrink-0 bg-white/50" />
+              {item}
+            </li>
+          ))}
+        </ul>
+        <div className="mt-10 flex flex-col items-stretch justify-center gap-4 sm:flex-row sm:items-center">
+          <Button href={planHref} variant="secondary" size="lg" className="w-full sm:w-auto">
+            View Development Plan
+          </Button>
           <Button
-            href={`${ROUTES.creatorDevelopmentPlan}?assessmentId=${encodeURIComponent(assessmentId)}`}
-            variant="secondary"
+            href={ROUTES.creatorDevelopmentPlan}
+            variant="outline"
             size="lg"
+            className="w-full border-white text-white hover:bg-white hover:text-black sm:w-auto"
           >
-            Unlock Your 40-Day Creator Development Plan
+            Learn More — $95
           </Button>
         </div>
         <p className="mt-8 font-sans text-[10px] uppercase tracking-nav text-white/40">

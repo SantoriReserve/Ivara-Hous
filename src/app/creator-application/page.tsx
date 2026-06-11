@@ -15,7 +15,7 @@ export default function CreatorApplicationPage() {
         title="Apply to Join the Creator Roster"
         description="Gain access to paid travel partnerships, hosted stays, and luxury hospitality campaigns — with no fees, exclusivity, or contracts. Creators remain fully independent."
       />
-      <section className="py-section sm:py-section-lg">
+      <section className="py-section sm:py-section-md lg:py-section-xl">
         <div className="luxury-container max-w-3xl">
           <CreatorApplicationForm />
         </div>

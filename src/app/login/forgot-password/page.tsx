@@ -15,7 +15,7 @@ export default function ForgotPasswordPage() {
         title="Forgot Password"
         description="We'll email you a secure link to reset your password."
       />
-      <section className="py-section sm:py-section-lg">
+      <section className="py-section sm:py-section-md lg:py-section-xl">
         <div className="luxury-container">
           <ForgotPasswordForm />
         </div>

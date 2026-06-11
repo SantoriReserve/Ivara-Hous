@@ -14,6 +14,7 @@ export const ROUTES = {
   loginForgotPassword: "/login/forgot-password",
   loginResetPassword: "/login/reset-password",
   authCallback: "/auth/callback",
+  authConfirm: "/auth/confirm",
   claim: "/claim",
   dashboard: "/dashboard",
   dashboardToday: "/dashboard/today",
@@ -48,6 +49,7 @@ export const NAV_LINKS = [
   { href: ROUTES.home, label: "Home" },
   { href: ROUTES.about, label: "About" },
   { href: ROUTES.services, label: "Services" },
+  { href: ROUTES.creatorDevelopmentPlan, label: "Development Plan" },
   { href: ROUTES.creatorDevelopment, label: "Creator Development" },
   { href: ROUTES.contact, label: "Contact" },
 ] as const;
@@ -56,6 +58,7 @@ export const FOOTER_LINKS = {
   explore: [
     { href: ROUTES.about, label: "About" },
     { href: ROUTES.services, label: "Services" },
+    { href: ROUTES.creatorDevelopmentPlan, label: "40-Day Creator Development Plan" },
     { href: ROUTES.contact, label: "Contact" },
   ],
   creators: [

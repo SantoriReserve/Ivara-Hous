@@ -6,7 +6,7 @@ import { SERVICES } from "@/lib/services";
 
 export function ServicesOverview() {
   return (
-    <section className="py-section sm:py-section-lg">
+    <section className="py-section sm:py-section-md lg:py-section-xl">
       <div className="luxury-container">
         <div className="flex flex-col items-start justify-between gap-12 border-b border-black/10 pb-16 lg:flex-row lg:items-end">
           <SectionHeading

@@ -13,7 +13,7 @@ const features = [
 
 export function TravelCoordination() {
   return (
-    <section className="py-section sm:py-section-lg">
+    <section className="py-section sm:py-section-md lg:py-section-xl">
       <div className="luxury-container">
         <LuxuryImage
           image={SITE_IMAGES.travelCoordination}

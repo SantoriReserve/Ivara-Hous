@@ -21,7 +21,78 @@ export default function ServicesPage() {
         description="From creator development and roster opportunities to partnership management, hospitality growth, travel coordination, and creative partnerships — every service is designed for luxury, clarity, and measurable impact."
       />
 
-      <section className="py-section sm:py-section-lg">
+      <section className="border-b border-black/10 bg-gray-light py-section sm:py-section-md lg:py-section-xl">
+        <div className="luxury-container">
+          <article
+            id="creator-development-plan"
+            className="scroll-mt-28 grid items-start gap-12 lg:grid-cols-2 lg:gap-20"
+          >
+            <div className="min-w-0">
+              <span className="luxury-label">Featured Digital Product</span>
+              <h2 className="mt-6 font-serif text-3xl font-normal tracking-tight text-black sm:text-4xl">
+                40-Day Creator Development Plan
+              </h2>
+              <p className="luxury-body-lg mt-8">
+                A personalized creator growth system with instant dashboard access,
+                daily action steps, portfolio development, partnership outreach
+                templates, and creator positioning strategy — built from your
+                assessment results.
+              </p>
+              <p className="mt-8 font-serif text-4xl font-normal tracking-tight text-black">
+                $95
+              </p>
+              <ul className="mt-10 space-y-4">
+                {[
+                  "Personalized dashboard",
+                  "Daily action plan",
+                  "Portfolio development",
+                  "Partnership outreach templates",
+                  "Creator positioning strategy",
+                  "Resources and tools",
+                  "Instant access",
+                ].map((item) => (
+                  <li
+                    key={item}
+                    className="flex items-start gap-4 font-sans text-sm text-black"
+                  >
+                    <span className="mt-2.5 h-px w-6 shrink-0 bg-black" />
+                    {item}
+                  </li>
+                ))}
+              </ul>
+              <div className="mt-10 flex flex-col gap-4 sm:flex-row">
+                <Button
+                  href={ROUTES.creatorDevelopmentPlan}
+                  variant="primary"
+                  size="md"
+                  className="w-full sm:w-auto"
+                >
+                  View Development Plan
+                </Button>
+                <Button
+                  href={ROUTES.creatorDevelopment}
+                  variant="outline"
+                  size="md"
+                  className="w-full sm:w-auto"
+                >
+                  Take Assessment
+                </Button>
+              </div>
+            </div>
+            <div className="border border-black/10 bg-white p-8 sm:p-10">
+              <p className="luxury-label mb-4">How It Works</p>
+              <ol className="space-y-5 font-sans text-sm text-gray-mid">
+                <li>1. Take the free creator assessment (optional but recommended)</li>
+                <li>2. Purchase the 40-Day Creator Development Plan</li>
+                <li>3. Create your account and access your dashboard instantly</li>
+                <li>4. Begin Day 1 with personalized daily actions</li>
+              </ol>
+            </div>
+          </article>
+        </div>
+      </section>
+
+      <section className="py-section sm:py-section-md lg:py-section-xl">
         <div className="luxury-container space-y-28 sm:space-y-36">
           {SERVICES.map((service, index) => {
             const image = SERVICE_IMAGES[service.id];
@@ -49,14 +120,24 @@ export default function ServicesPage() {
                     ))}
                   </ul>
                   {service.id === "creator-development" && (
-                    <Button
-                      href={ROUTES.creatorDevelopment}
-                      variant="primary"
-                      size="md"
-                      className="mt-10"
-                    >
-                      Take the Assessment
-                    </Button>
+                    <div className="mt-10 flex flex-col gap-4 sm:flex-row">
+                      <Button
+                        href={ROUTES.creatorDevelopmentPlan}
+                        variant="primary"
+                        size="md"
+                        className="w-full sm:w-auto"
+                      >
+                        View Development Plan
+                      </Button>
+                      <Button
+                        href={ROUTES.creatorDevelopment}
+                        variant="outline"
+                        size="md"
+                        className="w-full sm:w-auto"
+                      >
+                        Take Assessment
+                      </Button>
+                    </div>
                   )}
                   {service.id === "travel-creator-roster" && (
                     <Button
@@ -107,7 +188,7 @@ export default function ServicesPage() {
         </div>
       </section>
 
-      <section className="border-t border-black/10 bg-black py-section text-white sm:py-section-lg">
+      <section className="border-t border-black/10 bg-black py-section text-white sm:py-section-md lg:py-section-xl">
         <div className="luxury-container text-center">
           <h2 className="font-serif text-3xl font-normal tracking-tight sm:text-4xl">
             Not sure which service fits?
