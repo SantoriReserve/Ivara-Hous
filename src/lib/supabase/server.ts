@@ -1,5 +1,6 @@
 import { createServerClient, type CookieOptions } from "@supabase/ssr";
 import { cookies } from "next/headers";
+import { type NextResponse } from "next/server";
 import { getSupabaseAnonKey, getSupabaseUrl } from "@/lib/supabase/env";
 
 type CookieToSet = {
@@ -7,6 +8,23 @@ type CookieToSet = {
   value: string;
   options: CookieOptions;
 };
+
+function bindSupabaseCookies(
+  cookieStore: Awaited<ReturnType<typeof cookies>>,
+  response?: NextResponse
+) {
+  return {
+    getAll() {
+      return cookieStore.getAll();
+    },
+    setAll(cookiesToSet: CookieToSet[]) {
+      cookiesToSet.forEach(({ name, value, options }) => {
+        cookieStore.set(name, value, options);
+        response?.cookies.set(name, value, options);
+      });
+    },
+  };
+}
 
 export async function createSupabaseServerClient() {
   const cookieStore = await cookies();
@@ -26,5 +44,14 @@ export async function createSupabaseServerClient() {
         }
       },
     },
+  });
+}
+
+/** Route handlers must attach auth cookies to the redirect response explicitly. */
+export async function createSupabaseRouteHandlerClient(response: NextResponse) {
+  const cookieStore = await cookies();
+
+  return createServerClient(getSupabaseUrl(), getSupabaseAnonKey(), {
+    cookies: bindSupabaseCookies(cookieStore, response),
   });
 }

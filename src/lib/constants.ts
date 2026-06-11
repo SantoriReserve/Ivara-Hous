@@ -13,6 +13,7 @@ export const ROUTES = {
   login: "/login",
   loginForgotPassword: "/login/forgot-password",
   loginResetPassword: "/login/reset-password",
+  authCallback: "/auth/callback",
   claim: "/claim",
   dashboard: "/dashboard",
   dashboardToday: "/dashboard/today",

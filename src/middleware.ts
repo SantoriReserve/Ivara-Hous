@@ -15,9 +15,30 @@ function isAdminPublicPath(pathname: string): boolean {
   );
 }
 
+function hasAuthCallbackParams(request: NextRequest): boolean {
+  const { searchParams } = request.nextUrl;
+  return (
+    searchParams.has("code") ||
+    (searchParams.has("token_hash") && searchParams.has("type"))
+  );
+}
+
 export async function middleware(request: NextRequest) {
-  const { supabase, supabaseResponse } = await updateSupabaseSession(request);
   const pathname = request.nextUrl.pathname;
+
+  if (hasAuthCallbackParams(request) && pathname !== ROUTES.authCallback) {
+    const callbackUrl = request.nextUrl.clone();
+    if (
+      !callbackUrl.searchParams.has("next") &&
+      pathname === ROUTES.loginResetPassword
+    ) {
+      callbackUrl.searchParams.set("next", ROUTES.loginResetPassword);
+    }
+    callbackUrl.pathname = ROUTES.authCallback;
+    return NextResponse.redirect(callbackUrl);
+  }
+
+  const { supabase, supabaseResponse } = await updateSupabaseSession(request);
 
   const requiresDashboardAuth =
     pathname === ROUTES.dashboard || pathname.startsWith(`${ROUTES.dashboard}/`);

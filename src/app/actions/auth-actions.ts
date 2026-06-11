@@ -209,7 +209,7 @@ export async function requestPasswordResetAction(
 
   try {
     const siteUrl = getSiteUrl().replace(/\/$/, "");
-    const redirectTo = `${siteUrl}/auth/callback?next=${encodeURIComponent(ROUTES.loginResetPassword)}`;
+    const redirectTo = `${siteUrl}${ROUTES.authCallback}?next=${encodeURIComponent(ROUTES.loginResetPassword)}`;
     const supabase = await createSupabaseServerClient();
     const { error } = await supabase.auth.resetPasswordForEmail(email, { redirectTo });
 
