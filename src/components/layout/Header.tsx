@@ -14,16 +14,16 @@ export function Header() {
   return (
     <header className="sticky top-0 z-50 border-b border-black/10 bg-white/95 backdrop-blur-sm">
       {/* Desktop — three-column grid prevents nav/actions overlap */}
-      <div className="luxury-container hidden h-24 items-center lg:grid lg:grid-cols-[minmax(10rem,auto)_minmax(0,1fr)_auto] lg:gap-x-6 xl:gap-x-10">
+      <div className="luxury-container hidden h-24 items-center lg:grid lg:grid-cols-[1fr_auto_1fr] lg:gap-x-4 xl:gap-x-8 2xl:gap-x-10">
         <Link
           href={ROUTES.home}
-          className="shrink-0 font-serif text-xl tracking-tight text-black transition-opacity duration-luxury hover:opacity-60 sm:text-2xl"
+          className="shrink-0 justify-self-start font-serif text-xl tracking-tight text-black transition-opacity duration-luxury hover:opacity-60 sm:text-2xl"
         >
           {SITE_NAME}
         </Link>
 
         <nav
-          className="flex min-w-0 items-center justify-center gap-5 xl:gap-8"
+          className="flex min-w-0 items-center justify-center justify-self-center gap-5 xl:gap-8"
           aria-label="Main navigation"
         >
           {NAV_LINKS.map((link) => (
@@ -38,7 +38,7 @@ export function Header() {
           ))}
         </nav>
 
-        <div className="flex shrink-0 items-center justify-end gap-3 xl:gap-4">
+        <div className="relative z-[1] flex shrink-0 items-center justify-end justify-self-end gap-3 pl-5 xl:gap-4 xl:pl-6">
           <div className="flex items-center gap-4 border-r border-black/10 pr-4 xl:gap-5 xl:pr-5">
             <Link
               href={ROUTES.login}
