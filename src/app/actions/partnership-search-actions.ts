@@ -24,7 +24,9 @@ export async function searchPartnershipsByLocation(
     const { creatorContext } = await getDashboardContext(user.id);
     if (!creatorContext) return { success: false, error: "Creator context unavailable" };
 
-    const opportunities = await searchPartnershipOpportunitiesGlobal(creatorContext, input);
+    const opportunities = await searchPartnershipOpportunitiesGlobal(creatorContext, input, {
+      userId: user.id,
+    });
     return { success: true, opportunities, count: opportunities.length };
   } catch (error) {
     return {

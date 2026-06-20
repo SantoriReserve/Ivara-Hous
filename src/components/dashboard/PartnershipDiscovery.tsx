@@ -136,6 +136,19 @@ export function PartnershipDiscovery({
             {searchError && (
               <p className="mt-2 font-sans text-sm text-red-700">{searchError}</p>
             )}
+            {searchResults.length > 0 && discoveredCount > 0 && (
+              <p className="mt-3 font-sans text-xs text-gray-muted">
+                Live discovery data powered by{" "}
+                <a
+                  href="https://www.geoapify.com"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="underline underline-offset-2 hover:text-black"
+                >
+                  Geoapify
+                </a>
+              </p>
+            )}
           </div>
           {searchResults.length > 0 ? (
             <PartnershipOpportunitiesView
