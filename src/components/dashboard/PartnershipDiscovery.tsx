@@ -127,10 +127,11 @@ export function PartnershipDiscovery({
               {searchResults.length} opportunities in {[city, state, country].filter(Boolean).join(", ")}
             </h3>
             <p className="mt-2 font-sans text-sm text-gray-mid">
-              {curatedCount > 0 && `${curatedCount} curated premium targets`}
+              {curatedCount > 0 && `${curatedCount} verified curated properties`}
               {curatedCount > 0 && discoveredCount > 0 && " · "}
-              {discoveredCount > 0 && `${discoveredCount} live global discoveries`}
-              {searchResults.length === 0 && "No results — try adding a city name."}
+              {discoveredCount > 0 && `${discoveredCount} live discoveries`}
+              {searchResults.length === 0 &&
+                "No verified opportunities found for this location yet. Try a nearby city or broader region."}
             </p>
             {searchError && (
               <p className="mt-2 font-sans text-sm text-red-700">{searchError}</p>
@@ -143,10 +144,13 @@ export function PartnershipDiscovery({
               groupByTier
             />
           ) : (
-            <p className="font-sans text-sm text-gray-mid">
-              Enter a city with country or state for the most accurate results. Try Miami, Barcelona,
-              or Cape Town — boutique and independent properties appear first for early-stage creators.
-            </p>
+            <div className="border border-black/10 bg-black/[0.02] p-8 text-center">
+              <p className="font-serif text-xl text-black">No verified opportunities found</p>
+              <p className="mt-2 font-sans text-sm text-gray-mid">
+                No verified opportunities found for this location yet. Try a nearby city or broader
+                region — for example Miami Beach, Barcelona, or Cape Town.
+              </p>
+            </div>
           )}
         </section>
       )}

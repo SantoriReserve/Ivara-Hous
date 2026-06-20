@@ -2,7 +2,7 @@ import Link from "next/link";
 import { DashboardCard } from "@/components/dashboard/DashboardCard";
 import { PlanGeneratingState } from "@/components/dashboard/PlanGeneratingState";
 import { PlanProgressRing } from "@/components/dashboard/PlanProgressRing";
-import { getHubCardImage } from "@/lib/dashboard/dashboard-images";
+import { getHubCardImageAsset } from "@/lib/dashboard/dashboard-images";
 import { getProfileByUserId } from "@/lib/auth/profile-repository";
 import { getCurrentUser } from "@/lib/auth/require-user";
 import { ROUTES } from "@/lib/constants";
@@ -77,6 +77,13 @@ export default async function DashboardPage() {
 
   const showCongratsBanner =
     plan.completionPercentage >= 100 && !profile?.congratulationsSeenAt;
+
+  const hubToday = getHubCardImageAsset("today");
+  const hubPitch = getHubCardImageAsset("pitch");
+  const hubPartnerships = getHubCardImageAsset("partnerships");
+  const hubContent = getHubCardImageAsset("content");
+  const hubResources = getHubCardImageAsset("resources");
+  const hubWins = getHubCardImageAsset("wins");
 
   return (
     <div className="space-y-10">
@@ -192,8 +199,8 @@ export default async function DashboardPage() {
             description={`Day ${plan.currentFocusDay}: specific actions toward "${plan.planSummary.primaryGoal}" — not reflection, execution.`}
             href={`${ROUTES.dashboardToday}?day=${plan.currentFocusDay}`}
             meta="Open today's assignments →"
-            imageSrc={getHubCardImage("today")}
-            imagePosition="center 35%"
+            imageSrc={hubToday.src}
+            imagePosition={hubToday.objectPosition}
           />
           <DashboardCard
             label="Send today"
@@ -201,7 +208,8 @@ export default async function DashboardPage() {
             description="6 warm, pre-filled pitches with a 'send today' action on each — hotels, restaurants, UGC, follow-ups."
             href={ROUTES.dashboardPitchTemplates}
             meta="Copy, personalize one line, send"
-            imageSrc={getHubCardImage("pitch")}
+            imageSrc={hubPitch.src}
+            imagePosition={hubPitch.objectPosition}
           />
           <DashboardCard
             label="Contact today"
@@ -209,7 +217,8 @@ export default async function DashboardPage() {
             description="Curated targets with a specific outreach action on every card — who to DM or email and what pitch to use."
             href={ROUTES.dashboardPartnerships}
             meta="Includes local + dream brands"
-            imageSrc={getHubCardImage("partnerships")}
+            imageSrc={hubPartnerships.src}
+            imagePosition={hubPartnerships.objectPosition}
           />
           <DashboardCard
             label="Post this week"
@@ -217,7 +226,8 @@ export default async function DashboardPage() {
             description="Step-by-step shoot lists and posting instructions — each tied to how you'll use it in a pitch."
             href={ROUTES.dashboardContentIdeas}
             meta="Shoot lists included"
-            imageSrc={getHubCardImage("content")}
+            imageSrc={hubContent.src}
+            imagePosition={hubContent.objectPosition}
           />
           <DashboardCard
             label="Build systems"
@@ -225,7 +235,8 @@ export default async function DashboardPage() {
             description="Media kit, outreach tracker, rate card — personalized to your stage with a 'do today' on each."
             href={ROUTES.dashboardResources}
             meta="6 systems, 6 actions"
-            imageSrc={getHubCardImage("resources")}
+            imageSrc={hubResources.src}
+            imagePosition={hubResources.objectPosition}
           />
           <DashboardCard
             label="Track momentum"
@@ -233,7 +244,8 @@ export default async function DashboardPage() {
             description="See how close you are to your first partnership — and what to do next."
             href={ROUTES.dashboardWins}
             meta={`${plan.completionPercentage}% complete`}
-            imageSrc={getHubCardImage("wins")}
+            imageSrc={hubWins.src}
+            imagePosition={hubWins.objectPosition}
           />
         </div>
       </section>

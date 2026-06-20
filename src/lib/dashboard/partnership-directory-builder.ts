@@ -18,13 +18,22 @@ const OUTREACH_BY_PITCH: Record<string, string> = {
 };
 
 function contactWhere(entry: RawPartnershipEntry): string {
-  if (entry.contactEmail) {
+  if (entry.contactEmail && entry.instagram) {
     return `Email ${entry.contactEmail} — or DM ${entry.instagram}`;
   }
-  if (entry.contactPerson) {
+  if (entry.contactEmail) {
+    return `Email ${entry.contactEmail} — or use the website contact form`;
+  }
+  if (entry.contactPerson && entry.instagram) {
     return `${entry.contactPerson} — or DM ${entry.instagram}`;
   }
-  return `DM ${entry.instagram} — or use website contact form`;
+  if (entry.contactPerson) {
+    return entry.contactPerson;
+  }
+  if (entry.instagram) {
+    return `DM ${entry.instagram} — or use the website contact form`;
+  }
+  return "Use the website contact form";
 }
 
 function buildDescription(entry: RawPartnershipEntry): string {
@@ -44,7 +53,10 @@ function buildWhyYou(entry: RawPartnershipEntry): string {
 
 function buildDoToday(entry: RawPartnershipEntry): string {
   const pitch = OUTREACH_BY_PITCH[entry.pitchTemplateId] ?? "Hosted Stay Pitch";
-  return `Send the ${pitch} to ${entry.instagram}. Reference one detail from their feed and tie it to your {pillar} content for {travel}.`;
+  if (entry.instagram) {
+    return `Send the ${pitch} to ${entry.instagram}. Reference one detail from their feed and tie it to your {pillar} content for {travel}.`;
+  }
+  return `Send the ${pitch} via the website contact form. Reference one specific visual detail from ${entry.businessName} and tie it to your {pillar} content.`;
 }
 
 function buildMatchHint(entry: RawPartnershipEntry): string {

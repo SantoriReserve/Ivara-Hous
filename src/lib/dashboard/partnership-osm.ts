@@ -3,6 +3,8 @@
  * Supplements the curated directory for any city worldwide.
  */
 
+import { fetchWithTimeout } from "@/lib/dashboard/partnership-fetch-utils";
+import { normalizeInstagramHandle, normalizeWebsiteUrl } from "@/lib/dashboard/partnership-result-utils";
 import { isMajorChainBrand } from "@/lib/dashboard/partnership-stage-ranking";
 
 export type OsmPlace = {
@@ -11,6 +13,7 @@ export type OsmPlace = {
   category: string;
   address: string;
   website: string | null;
+  instagram: string | null;
   email: string | null;
   phone: string | null;
   wikidata: string | null;
@@ -61,9 +64,10 @@ export async function geocodeLocation(input: {
   }
 
   await sleep(1100);
-  const res = await fetch(`https://nominatim.openstreetmap.org/search?${params.toString()}`, {
-    headers: NOMINATIM_HEADERS,
-  });
+  const res = await fetchWithTimeout(
+    `https://nominatim.openstreetmap.org/search?${params.toString()}`,
+    { headers: NOMINATIM_HEADERS, timeoutMs: 8000 }
+  );
   if (!res.ok) return null;
 
   const data = (await res.json()) as Array<{
@@ -155,12 +159,16 @@ function parseOsmElement(
   if (lat === undefined || lon === undefined) return null;
 
   const category = categoryFromTags(tags);
+  const website = normalizeWebsiteUrl(tags.website ?? tags["contact:website"] ?? null);
+  const instagram = normalizeInstagramHandle(tags);
+
   return {
     osmId: `${type}/${el.id}`,
     name,
     category,
     address: buildAddress(tags),
-    website: tags.website ?? tags["contact:website"] ?? null,
+    website,
+    instagram,
     email: tags.email ?? tags["contact:email"] ?? null,
     phone: tags.phone ?? tags["contact:phone"] ?? null,
     wikidata: tags.wikidata ?? null,
@@ -170,7 +178,7 @@ function parseOsmElement(
   };
 }
 
-function distanceKm(aLat: number, aLon: number, bLat: number, bLon: number): number {
+export function distanceKm(aLat: number, aLon: number, bLat: number, bLon: number): number {
   const toRad = (value: number) => (value * Math.PI) / 180;
   const dLat = toRad(bLat - aLat);
   const dLon = toRad(bLon - aLon);
@@ -188,7 +196,7 @@ export async function fetchOsmHospitalityPlaces(
 ): Promise<OsmPlace[]> {
   const radius = 18000;
   const query = `
-    [out:json][timeout:35];
+    [out:json][timeout:12];
     (
       node["tourism"~"hotel|guest_house|hostel|museum|attraction|apartment"](around:${radius},${geo.lat},${geo.lon});
       way["tourism"~"hotel|guest_house|hostel|museum|attraction|apartment"](around:${radius},${geo.lat},${geo.lon});
@@ -205,7 +213,7 @@ export async function fetchOsmHospitalityPlaces(
 
   let res: Response | null = null;
   for (const endpoint of endpoints) {
-    const attempt = await fetch(endpoint, {
+    const attempt = await fetchWithTimeout(endpoint, {
       method: "POST",
       headers: {
         "Content-Type": "application/x-www-form-urlencoded",
@@ -213,6 +221,7 @@ export async function fetchOsmHospitalityPlaces(
         Accept: "application/json",
       },
       body: new URLSearchParams({ data: query }).toString(),
+      timeoutMs: 12000,
     });
     if (attempt.ok) {
       res = attempt;
@@ -258,9 +267,9 @@ export async function fetchOsmHospitalityPlaces(
 
 export async function fetchWikidataImageUrl(wikidataId: string): Promise<string | null> {
   try {
-    const res = await fetch(
+    const res = await fetchWithTimeout(
       `https://www.wikidata.org/wiki/Special:EntityData/${wikidataId}.json`,
-      {}
+      { timeoutMs: 3000 }
     );
     if (!res.ok) return null;
     const json = await res.json();

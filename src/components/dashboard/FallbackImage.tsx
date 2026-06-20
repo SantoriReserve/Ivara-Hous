@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import { useState, type ReactNode } from "react";
+import { isExternalImageUrl } from "@/lib/dashboard/partnership-property-images";
 
 type FallbackImageProps = {
   src: string;
@@ -25,6 +26,7 @@ export function FallbackImage({
   children,
 }: FallbackImageProps) {
   const [imgSrc, setImgSrc] = useState(src);
+  const unoptimized = isExternalImageUrl(imgSrc);
 
   return (
     <div className={`group ${aspectClassName}`}>
@@ -32,6 +34,7 @@ export function FallbackImage({
         src={imgSrc}
         alt={alt}
         fill
+        unoptimized={unoptimized}
         className={className}
         style={{ objectPosition }}
         sizes={sizes}

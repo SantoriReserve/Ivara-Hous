@@ -1,6 +1,6 @@
 import Image from "next/image";
 import type { DashboardResource } from "@/lib/dashboard/resources";
-import { getResourceImageUrl } from "@/lib/dashboard/dashboard-images";
+import { getResourceImageUrl, getResourceObjectPosition } from "@/lib/dashboard/dashboard-images";
 
 type ResourcesViewProps = {
   resources: DashboardResource[];
@@ -20,6 +20,7 @@ export function ResourcesView({ resources }: ResourcesViewProps) {
               alt=""
               fill
               className="object-cover transition-transform duration-luxury ease-luxury group-hover:scale-[1.03]"
+              style={{ objectPosition: getResourceObjectPosition(resource.id) }}
               sizes="(max-width: 768px) 100vw, (max-width: 1280px) 50vw, 640px"
             />
             <div className="absolute inset-0 bg-gradient-to-t from-black/25 via-transparent to-transparent" />

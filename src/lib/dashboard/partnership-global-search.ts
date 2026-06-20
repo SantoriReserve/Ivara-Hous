@@ -1,10 +1,11 @@
 import { fillContext } from "@/lib/dashboard/fill-context";
-import { getEditorialImageUrl } from "@/lib/dashboard/dashboard-images";
+import { getCategoryImageAsset } from "@/lib/dashboard/dashboard-images";
 import { directoryBusinessToOpportunity } from "@/lib/dashboard/partnership-directory-mapper";
 import { matchDirectoryBusinesses } from "@/lib/dashboard/partnership-directory";
+import { withTimeout } from "@/lib/dashboard/partnership-fetch-utils";
 import {
-  addressMatchesResolvedLocation,
   geocodeInputFromSearch,
+  osmPlaceMatchesResolvedLocation,
   resolveLocationSearch,
 } from "@/lib/dashboard/partnership-location";
 import {
@@ -13,10 +14,10 @@ import {
 } from "@/lib/dashboard/partnership-opportunities";
 import {
   fetchOsmHospitalityPlaces,
-  fetchWikidataImageUrl,
   geocodeLocation,
   type OsmPlace,
 } from "@/lib/dashboard/partnership-osm";
+import { isVerifiedPartnershipOpportunity } from "@/lib/dashboard/partnership-result-utils";
 import { rankPartnershipOpportunities } from "@/lib/dashboard/partnership-stage-ranking";
 import { PITCH_TEMPLATE_TITLES } from "@/lib/dashboard/pitch-templates";
 import type { CreatorContext } from "@/lib/plan/plan-generation-context";
@@ -49,36 +50,35 @@ function scoresForTier(tier: 1 | 2 | 3): {
   return { opportunityScore: 3, difficultyScore: 4, valueScore: 5, priority: "explore" };
 }
 
-async function osmToOpportunity(
+function osmImageUrl(place: OsmPlace): string {
+  return getCategoryImageAsset(place.category, `osm-${place.osmId}-${place.category}`).src;
+}
+
+function osmToOpportunity(
   place: OsmPlace,
   ctx: CreatorContext,
   locationLabel: string
-): Promise<PartnershipOpportunity> {
+): PartnershipOpportunity {
   const pitch = pitchForCategory(place.category);
   const scores = scoresForTier(place.tier);
-  const website = place.website?.startsWith("http")
-    ? place.website
-    : place.website
-      ? `https://${place.website}`
-      : `https://www.google.com/search?q=${encodeURIComponent(`${place.name} ${locationLabel}`)}`;
+  const website = place.website ?? "";
+  const instagram = place.instagram ?? "Not available";
 
-  const imageUrl = place.wikidata
-    ? (await fetchWikidataImageUrl(place.wikidata)) ??
-      getEditorialImageUrl(`osm-${place.osmId}-${place.category}`)
-    : getEditorialImageUrl(`osm-${place.osmId}-${place.category}`);
-
-  const instagram = `Instagram — search "${place.name}" in ${locationLabel}`;
   const contactWhere = place.email
-    ? `Email ${place.email} — or find ${place.name} on Instagram`
+    ? `Email ${place.email}${place.instagram ? ` — or DM ${place.instagram}` : ""}`
     : place.phone
-      ? `Call ${place.phone} — or DM on Instagram after verifying handle`
-      : `Find ${place.name} on Instagram — search name + city before pitching`;
+      ? `Call ${place.phone}${place.instagram ? ` — or DM ${place.instagram}` : ""}`
+      : place.instagram
+        ? `DM ${place.instagram} — or use the website contact form`
+        : website
+          ? `Use the contact form on ${website.replace(/^https?:\/\/(www\.)?/, "")}`
+          : "Contact details on property website";
 
   const base: PartnershipOpportunity = {
     id: `osm-${place.osmId.replace("/", "-")}`,
     businessName: place.name,
     category: place.category,
-    description: `${place.name} is a verified ${place.category.toLowerCase()} in ${locationLabel} — discovered via OpenStreetMap for creator partnerships.`,
+    description: `${place.name} is a verified ${place.category.toLowerCase()} in ${locationLabel} — matched to your creator stage for hospitality partnerships.`,
     website,
     instagram,
     address: place.address,
@@ -90,7 +90,7 @@ async function osmToOpportunity(
     pitchTemplateTitle: pitch.title,
     matchReason: fillContext(
       ctx,
-      `Global discovery match in ${locationLabel} for {niche} creators building {tier} proof.`
+      `Verified ${place.category.toLowerCase()} in ${locationLabel} for {niche} creators building {tier} proof.`
     ),
     whyYou: fillContext(
       ctx,
@@ -98,10 +98,12 @@ async function osmToOpportunity(
     ),
     doToday: fillContext(
       ctx,
-      `Verify their Instagram handle, then send ${pitch.title} referencing one visual detail from their online presence.`
+      place.instagram
+        ? `Send ${pitch.title} to ${place.instagram}. Open with one visual detail from their feed and tie it to your {pillar} content.`
+        : `Send ${pitch.title} via the website contact form. Reference one specific design or experience detail from ${place.name}.`
     ),
     priority: scores.priority,
-    imageUrl,
+    imageUrl: osmImageUrl(place),
     opportunityScore: scores.opportunityScore,
     difficultyScore: scores.difficultyScore,
     valueScore: scores.valueScore,
@@ -110,7 +112,7 @@ async function osmToOpportunity(
     source: "discovered",
     recommendedPitch: fillContext(
       ctx,
-      `Use ${pitch.title} — verify the property's Instagram first, then personalize for {pillar} content.`
+      `Use ${pitch.title} — personalize for {pillar} content and propose a clear deliverable package.`
     ),
     searchLocation: locationLabel,
   };
@@ -118,7 +120,7 @@ async function osmToOpportunity(
   return enrichOpportunity(base, ctx);
 }
 
-const TARGET_RESULTS = 50;
+const TARGET_RESULTS = 30;
 
 export async function searchPartnershipOpportunitiesGlobal(
   ctx: CreatorContext,
@@ -128,7 +130,6 @@ export async function searchPartnershipOpportunitiesGlobal(
   if (!resolved.label) return [];
 
   const geocodeInput = geocodeInputFromSearch(input, resolved);
-
   const curated = matchDirectoryBusinesses(input);
   const seenNames = new Set<string>();
   const results: PartnershipOpportunity[] = [];
@@ -137,29 +138,38 @@ export async function searchPartnershipOpportunitiesGlobal(
     const key = business.businessName.toLowerCase();
     if (seenNames.has(key)) continue;
     seenNames.add(key);
-    results.push(
-      enrichOpportunity(
-        directoryBusinessToOpportunity(business, ctx, resolved.label),
-        ctx
-      )
+    const opp = enrichOpportunity(
+      directoryBusinessToOpportunity(business, ctx, resolved.label),
+      ctx
     );
+    if (isVerifiedPartnershipOpportunity(opp)) {
+      results.push(opp);
+    }
   }
 
-  const shouldDiscover = geocodeInput.city.length > 0 || geocodeInput.country.length > 0;
-  if (shouldDiscover && results.length < TARGET_RESULTS) {
-    const geo = await geocodeLocation(geocodeInput);
+  const shouldDiscover =
+    (geocodeInput.city.length > 0 || geocodeInput.country.length > 0) &&
+    results.length < TARGET_RESULTS;
+
+  if (shouldDiscover) {
+    const geo = await withTimeout(geocodeLocation(geocodeInput), 9000, null);
     if (geo) {
-      const osmPlaces = await fetchOsmHospitalityPlaces(geo, TARGET_RESULTS - results.length + 20);
-      const osmOpps = await Promise.all(
-        osmPlaces
-          .filter((place) => addressMatchesResolvedLocation(place.address, resolved))
-          .map((place) => osmToOpportunity(place, ctx, resolved.label))
+      const osmPlaces = await withTimeout(
+        fetchOsmHospitalityPlaces(geo, TARGET_RESULTS - results.length + 15),
+        14000,
+        []
       );
 
-      for (const opp of osmOpps) {
-        const key = opp.businessName.toLowerCase();
+      for (const place of osmPlaces) {
+        if (!osmPlaceMatchesResolvedLocation(place, geo, resolved)) continue;
+
+        const key = place.name.toLowerCase();
         if (seenNames.has(key)) continue;
         seenNames.add(key);
+
+        const opp = osmToOpportunity(place, ctx, resolved.label);
+        if (!isVerifiedPartnershipOpportunity(opp)) continue;
+
         results.push(opp);
         if (results.length >= TARGET_RESULTS) break;
       }

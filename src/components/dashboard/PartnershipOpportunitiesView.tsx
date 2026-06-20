@@ -5,10 +5,15 @@ import {
   getPartnershipObjectPosition,
 } from "@/lib/dashboard/dashboard-images";
 import { OPPORTUNITY_IMAGE_FALLBACK } from "@/lib/dashboard/opportunity-images";
+import {
+  formatInstagramDisplay,
+  formatWebsiteDisplay,
+} from "@/lib/dashboard/partnership-result-utils";
 import { ROUTES } from "@/lib/constants";
 
 function partnershipBusinessId(opp: PartnershipOpportunity): string {
   if (opp.id.startsWith("curated-")) return opp.id.slice("curated-".length);
+  if (opp.id.startsWith("pipeline-")) return opp.id.slice("pipeline-".length);
   return opp.id;
 }
 
@@ -58,6 +63,11 @@ function OpportunityCard({
   opp: PartnershipOpportunity;
   showScores: boolean;
 }) {
+  const instagram = formatInstagramDisplay(opp.instagram);
+  const website = formatWebsiteDisplay(opp.website);
+  const hasWebsite = website !== "Not available";
+  const locationLabel = opp.searchLocation ?? opp.address?.split(",").slice(-2).join(", ").trim();
+
   return (
     <article className="group flex flex-col overflow-hidden border border-black/10 bg-white transition-all duration-luxury ease-luxury hover:border-black/20 hover:shadow-[0_12px_40px_rgba(0,0,0,0.06)]">
       <FallbackImage
@@ -77,8 +87,11 @@ function OpportunityCard({
             </h3>
             {opp.source === "discovered" && (
               <p className="mt-1 font-sans text-[10px] uppercase tracking-nav text-gray-muted">
-                Live discovery · verify Instagram before outreach
+                Live discovery · OpenStreetMap verified
               </p>
+            )}
+            {locationLabel && (
+              <p className="mt-1 font-sans text-xs text-gray-mid">{locationLabel}</p>
             )}
           </div>
           <span
@@ -144,8 +157,8 @@ function OpportunityCard({
             )}
             <p className="font-sans text-sm text-black">{opp.contactWhere}</p>
             <p className="mt-1 font-sans text-xs text-gray-mid">
-              {opp.instagram}
-              {opp.website.startsWith("http") ? (
+              Instagram: {instagram}
+              {hasWebsite ? (
                 <>
                   {" · "}
                   <a
@@ -154,11 +167,11 @@ function OpportunityCard({
                     rel="noopener noreferrer"
                     className="underline hover:opacity-60"
                   >
-                    {opp.website.replace(/^https?:\/\/(www\.)?/, "")}
+                    {website.replace(/^https?:\/\/(www\.)?/, "")}
                   </a>
                 </>
               ) : (
-                <> · {opp.website}</>
+                <> · Website: Not available</>
               )}
             </p>
           </div>

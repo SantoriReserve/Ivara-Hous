@@ -3,6 +3,7 @@ import {
   resolveGeoKeys,
   slugifyGeo,
 } from "@/lib/dashboard/partnership-geo";
+import { distanceKm, type GeocodeResult } from "@/lib/dashboard/partnership-osm";
 import type { LocationSearchInput } from "@/lib/dashboard/partnership-search";
 
 export type ResolvedLocationSearch = GeoKeys & {
@@ -121,11 +122,12 @@ export function addressMatchesResolvedLocation(
   resolved: ResolvedLocationSearch
 ): boolean {
   if (!resolved.city && !resolved.state && !resolved.country) return true;
-  if (
-    address === "Address on property website" ||
-    address.length < 8
-  ) {
-    return Boolean(resolved.city || resolved.state || resolved.country);
+
+  const isPlaceholder =
+    address === "Address on property website" || address.length < 8;
+
+  if (isPlaceholder) {
+    return false;
   }
 
   const haystack = slugifyGeo(address);
@@ -142,5 +144,32 @@ export function addressMatchesResolvedLocation(
     if (token.length > 3 && haystack.includes(token)) return true;
   }
 
-  return !resolved.city;
+  return false;
+}
+
+const MIAMI_METRO_ALIASES = ["miami", "miami-beach", "south-beach", "coral-gables", "brickell", "surfside"];
+
+export function osmPlaceMatchesResolvedLocation(
+  place: { address: string; lat: number; lon: number },
+  geo: GeocodeResult,
+  resolved: ResolvedLocationSearch
+): boolean {
+  const dist = distanceKm(geo.lat, geo.lon, place.lat, place.lon);
+  if (dist > 22) return false;
+
+  if (addressMatchesResolvedLocation(place.address, resolved)) return true;
+
+  if (resolved.city === "miami" && dist <= 18) {
+    const haystack = slugifyGeo(place.address);
+    if (MIAMI_METRO_ALIASES.some((alias) => haystack.includes(alias))) return true;
+    if (haystack.includes("florida") || haystack.includes("fl")) return true;
+  }
+
+  if (resolved.city && dist <= 12) {
+    const cityWords = resolved.city.split("-").filter((part) => part.length > 3);
+    const haystack = slugifyGeo(place.address);
+    if (cityWords.some((part) => haystack.includes(part))) return true;
+  }
+
+  return !resolved.city && dist <= 18;
 }
