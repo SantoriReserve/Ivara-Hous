@@ -3,6 +3,8 @@ import { getCurrentUser } from "@/lib/auth/require-user";
 import { getDashboardContext } from "@/lib/dashboard/dashboard-context";
 import { getPartnershipOpportunities } from "@/lib/dashboard/partnership-opportunities";
 
+export const maxDuration = 30;
+
 export default async function PartnershipsPage() {
   const user = await getCurrentUser();
   const { creatorContext } = user ? await getDashboardContext(user.id) : { creatorContext: null };

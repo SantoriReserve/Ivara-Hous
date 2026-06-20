@@ -4,6 +4,7 @@
  */
 
 import { fetchWithTimeout } from "@/lib/dashboard/partnership-fetch-utils";
+import { getCachedCityCoordinates } from "@/lib/dashboard/partnership-city-coords";
 import { normalizeInstagramHandle, normalizeWebsiteUrl } from "@/lib/dashboard/partnership-result-utils";
 import { isMajorChainBrand } from "@/lib/dashboard/partnership-stage-ranking";
 
@@ -39,11 +40,26 @@ function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-export async function geocodeLocation(input: {
-  city: string;
-  state: string;
-  country: string;
-}): Promise<GeocodeResult | null> {
+export async function geocodeLocation(
+  input: {
+    city: string;
+    state: string;
+    country: string;
+  },
+  cityKey?: string
+): Promise<GeocodeResult | null> {
+  const cached = cityKey ? getCachedCityCoordinates(cityKey) : null;
+  if (cached) {
+    return {
+      lat: cached.lat,
+      lon: cached.lon,
+      displayName: cached.label,
+      city: cached.geocodeCity,
+      state: cached.geocodeState,
+      country: cached.geocodeCountry,
+    };
+  }
+
   const city = input.city.trim();
   const state = input.state.trim();
   const country = input.country.trim();

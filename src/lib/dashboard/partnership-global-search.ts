@@ -14,9 +14,11 @@ import {
 } from "@/lib/dashboard/partnership-opportunities";
 import {
   fetchOsmHospitalityPlaces,
+  fetchWikidataImageUrl,
   geocodeLocation,
   type OsmPlace,
 } from "@/lib/dashboard/partnership-osm";
+import { getVerifiedPropertyImageUrl } from "@/lib/dashboard/partnership-property-images";
 import { isVerifiedPartnershipOpportunity } from "@/lib/dashboard/partnership-result-utils";
 import { rankPartnershipOpportunities } from "@/lib/dashboard/partnership-stage-ranking";
 import { PITCH_TEMPLATE_TITLES } from "@/lib/dashboard/pitch-templates";
@@ -50,14 +52,19 @@ function scoresForTier(tier: 1 | 2 | 3): {
   return { opportunityScore: 3, difficultyScore: 4, valueScore: 5, priority: "explore" };
 }
 
-function osmImageUrl(place: OsmPlace): string {
+async function osmImageUrl(place: OsmPlace): Promise<string> {
+  if (place.wikidata) {
+    const wikidataImage = await withTimeout(fetchWikidataImageUrl(place.wikidata), 2500, null);
+    if (wikidataImage) return wikidataImage;
+  }
   return getCategoryImageAsset(place.category, `osm-${place.osmId}-${place.category}`).src;
 }
 
 function osmToOpportunity(
   place: OsmPlace,
   ctx: CreatorContext,
-  locationLabel: string
+  locationLabel: string,
+  imageUrl: string
 ): PartnershipOpportunity {
   const pitch = pitchForCategory(place.category);
   const scores = scoresForTier(place.tier);
@@ -103,7 +110,7 @@ function osmToOpportunity(
         : `Send ${pitch.title} via the website contact form. Reference one specific design or experience detail from ${place.name}.`
     ),
     priority: scores.priority,
-    imageUrl: osmImageUrl(place),
+    imageUrl,
     opportunityScore: scores.opportunityScore,
     difficultyScore: scores.difficultyScore,
     valueScore: scores.valueScore,
@@ -127,7 +134,7 @@ export async function searchPartnershipOpportunitiesGlobal(
   input: LocationSearchInput
 ): Promise<PartnershipOpportunity[]> {
   const resolved = resolveLocationSearch(input);
-  if (!resolved.label) return [];
+  if (!resolved.label && !resolved.city && !resolved.state && !resolved.country) return [];
 
   const geocodeInput = geocodeInputFromSearch(input, resolved);
   const curated = matchDirectoryBusinesses(input);
@@ -138,25 +145,38 @@ export async function searchPartnershipOpportunitiesGlobal(
     const key = business.businessName.toLowerCase();
     if (seenNames.has(key)) continue;
     seenNames.add(key);
+
+    const imageUrl =
+      getVerifiedPropertyImageUrl(business.id) ?? business.imageUrl;
+
     const opp = enrichOpportunity(
-      directoryBusinessToOpportunity(business, ctx, resolved.label),
+      {
+        ...directoryBusinessToOpportunity(business, ctx, resolved.label || resolved.cityLabel),
+        imageUrl,
+      },
       ctx
     );
+
     if (isVerifiedPartnershipOpportunity(opp)) {
       results.push(opp);
     }
   }
 
   const shouldDiscover =
-    (geocodeInput.city.length > 0 || geocodeInput.country.length > 0) &&
+    Boolean(resolved.city || resolved.state || resolved.country || geocodeInput.city || geocodeInput.country) &&
     results.length < TARGET_RESULTS;
 
   if (shouldDiscover) {
-    const geo = await withTimeout(geocodeLocation(geocodeInput), 9000, null);
+    const geo = await withTimeout(
+      geocodeLocation(geocodeInput, resolved.city),
+      8000,
+      null
+    );
+
     if (geo) {
       const osmPlaces = await withTimeout(
-        fetchOsmHospitalityPlaces(geo, TARGET_RESULTS - results.length + 15),
-        14000,
+        fetchOsmHospitalityPlaces(geo, Math.max(TARGET_RESULTS - results.length + 10, 20)),
+        12000,
         []
       );
 
@@ -167,7 +187,8 @@ export async function searchPartnershipOpportunitiesGlobal(
         if (seenNames.has(key)) continue;
         seenNames.add(key);
 
-        const opp = osmToOpportunity(place, ctx, resolved.label);
+        const imageUrl = await osmImageUrl(place);
+        const opp = osmToOpportunity(place, ctx, resolved.label || geo.displayName, imageUrl);
         if (!isVerifiedPartnershipOpportunity(opp)) continue;
 
         results.push(opp);

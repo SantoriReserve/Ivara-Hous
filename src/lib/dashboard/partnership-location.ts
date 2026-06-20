@@ -2,6 +2,7 @@ import {
   type GeoKeys,
   resolveGeoKeys,
   slugifyGeo,
+  SUPPORTED_CITY_LABELS,
 } from "@/lib/dashboard/partnership-geo";
 import { distanceKm, type GeocodeResult } from "@/lib/dashboard/partnership-osm";
 import type { LocationSearchInput } from "@/lib/dashboard/partnership-search";
@@ -90,13 +91,16 @@ export function resolveLocationSearch(input: LocationSearchInput): ResolvedLocat
   const country = resolved.country || meta?.country || "";
 
   const labelParts = [
-    input.city.trim() || meta?.label?.split(",")[0] || "",
+    input.city.trim() ||
+      meta?.label?.split(",")[0]?.trim() ||
+      (resolved.city ? SUPPORTED_CITY_LABELS[resolved.city]?.split(",")[0]?.trim() : "") ||
+      "",
     input.state.trim() || undefined,
     input.country.trim() || undefined,
   ].filter(Boolean);
 
-  const label = labelParts.join(", ");
-  const cityLabel = meta?.label ?? label;
+  const cityLabel = meta?.label ?? labelParts.join(", ");
+  const label = labelParts.join(", ") || meta?.label || cityLabel;
 
   const tokens = [city, state, country, slugifyGeo(input.city), slugifyGeo(input.state), slugifyGeo(input.country)]
     .filter(Boolean)
@@ -155,14 +159,22 @@ export function osmPlaceMatchesResolvedLocation(
   resolved: ResolvedLocationSearch
 ): boolean {
   const dist = distanceKm(geo.lat, geo.lon, place.lat, place.lon);
-  if (dist > 22) return false;
+  const maxDist = resolved.city ? 22 : resolved.state ? 35 : 50;
+  if (dist > maxDist) return false;
+
+  if (resolved.city && dist <= 18) return true;
 
   if (addressMatchesResolvedLocation(place.address, resolved)) return true;
 
-  if (resolved.city === "miami" && dist <= 18) {
+  if (resolved.city === "miami" && dist <= 20) {
     const haystack = slugifyGeo(place.address);
     if (MIAMI_METRO_ALIASES.some((alias) => haystack.includes(alias))) return true;
     if (haystack.includes("florida") || haystack.includes("fl")) return true;
+  }
+
+  if (resolved.city === "new-york-city" && dist <= 20) {
+    const haystack = slugifyGeo(place.address);
+    if (haystack.includes("new-york") || haystack.includes("ny")) return true;
   }
 
   if (resolved.city && dist <= 12) {
@@ -171,5 +183,5 @@ export function osmPlaceMatchesResolvedLocation(
     if (cityWords.some((part) => haystack.includes(part))) return true;
   }
 
-  return !resolved.city && dist <= 18;
+  return !resolved.city && dist <= 25;
 }

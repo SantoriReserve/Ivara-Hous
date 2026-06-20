@@ -18,6 +18,7 @@ const CITY_ALIASES: Record<string, string> = {
   "south beach": "miami",
   barcelona: "barcelona",
   madrid: "madrid",
+  toronto: "toronto",
   "mexico city": "mexico-city",
   cdmx: "mexico-city",
   "são paulo": "sao-paulo",
@@ -74,49 +75,24 @@ export function slugifyGeo(value: string): string {
     .replace(/^-|-$/g, "");
 }
 
-export function resolveGeoKeys(input: {
-  country: string;
-  state: string;
-  city: string;
-}): GeoKeys {
-  const rawCity = slugifyGeo(input.city);
-  const rawState = slugifyGeo(input.state);
-  const rawCountry = slugifyGeo(input.country);
+const CITY_ALIASES_EXTRA: Record<string, string> = {
+  "cape town": "cape-town",
+  capetown: "cape-town",
+  praha: "prague",
+};
 
-  return {
-    city: CITY_ALIASES[rawCity] ?? CITY_ALIASES_EXTRA[rawCity] ?? rawCity,
-    state: STATE_ALIASES[rawState] ?? rawState,
-    country: COUNTRY_ALIASES[rawCountry] ?? rawCountry,
-  };
-}
-
-export function businessMatchesSearch(
-  business: { city: string; state: string; country: string },
-  search: GeoKeys
-): boolean {
-  const hasCity = Boolean(search.city);
-  const hasState = Boolean(search.state);
-  const hasCountry = Boolean(search.country);
-
-  if (hasCity) {
-    if (business.city !== search.city) return false;
-    if (hasState && business.state !== search.state) return false;
-    if (hasCountry && business.country !== search.country) return false;
-    return true;
-  }
-
-  if (hasState) {
-    if (business.state !== search.state) return false;
-    if (hasCountry && business.country !== search.country) return false;
-    return true;
-  }
-
-  if (hasCountry) {
-    return business.country === search.country;
-  }
-
-  return false;
-}
+const HYPHEN_CITY_ALIASES: Record<string, string> = {
+  "new-york": "new-york-city",
+  "south-beach": "miami",
+  "miami-beach": "miami",
+  la: "los-angeles",
+  sf: "san-francisco",
+  nyc: "new-york-city",
+  cdmx: "mexico-city",
+  capetown: "cape-town",
+  praha: "prague",
+  uae: "dubai",
+};
 
 export const SUPPORTED_CITY_LABELS: Record<string, string> = {
   miami: "Miami, FL",
@@ -160,10 +136,88 @@ export const SUPPORTED_CITY_LABELS: Record<string, string> = {
   marrakech: "Marrakech, Morocco",
   "cape-town": "Cape Town, South Africa",
   prague: "Prague, Czech Republic",
+  madrid: "Madrid, Spain",
+  toronto: "Toronto, Canada",
 };
 
-const CITY_ALIASES_EXTRA: Record<string, string> = {
-  "cape town": "cape-town",
-  "capetown": "cape-town",
-  praha: "prague",
-};
+const CITY_COORDINATES_KEY: Record<string, boolean> = Object.fromEntries(
+  Object.keys(SUPPORTED_CITY_LABELS).map((key) => [key, true])
+);
+
+function resolveCityKey(rawCity: string): string {
+  if (!rawCity) return "";
+  if (CITY_ALIASES[rawCity]) return CITY_ALIASES[rawCity];
+  if (CITY_ALIASES_EXTRA[rawCity]) return CITY_ALIASES_EXTRA[rawCity];
+  if (HYPHEN_CITY_ALIASES[rawCity]) return HYPHEN_CITY_ALIASES[rawCity];
+
+  const spaced = rawCity.replace(/-/g, " ");
+  if (CITY_ALIASES[spaced]) return CITY_ALIASES[spaced];
+  if (CITY_ALIASES_EXTRA[spaced]) return CITY_ALIASES_EXTRA[spaced];
+
+  if (SUPPORTED_CITY_LABELS[rawCity]) return rawCity;
+  return rawCity;
+}
+
+function resolveCountryKey(rawCountry: string): string {
+  if (!rawCountry) return "";
+  if (COUNTRY_ALIASES[rawCountry]) return COUNTRY_ALIASES[rawCountry];
+  const spaced = rawCountry.replace(/-/g, " ");
+  if (COUNTRY_ALIASES[spaced]) return COUNTRY_ALIASES[spaced];
+  return rawCountry;
+}
+
+export function resolveGeoKeys(input: {
+  country: string;
+  state: string;
+  city: string;
+}): GeoKeys {
+  const rawCity = slugifyGeo(input.city);
+  const rawState = slugifyGeo(input.state);
+  const rawCountry = slugifyGeo(input.country);
+
+  let city = resolveCityKey(rawCity);
+  let state = STATE_ALIASES[rawState] ?? rawState;
+  const country = resolveCountryKey(rawCountry);
+
+  // Common UX: city name entered in state field (e.g. state = "New York", city empty)
+  if (!city && rawState) {
+    const stateAsCity = resolveCityKey(rawState);
+    if (SUPPORTED_CITY_LABELS[stateAsCity] || CITY_COORDINATES_KEY[stateAsCity]) {
+      city = stateAsCity;
+      state = "";
+    }
+  }
+
+  return { city, state, country };
+}
+
+export function businessMatchesSearch(
+  business: { city: string; state: string; country: string },
+  search: GeoKeys
+): boolean {
+  const hasCity = Boolean(search.city);
+  const hasState = Boolean(search.state);
+  const hasCountry = Boolean(search.country);
+
+  if (hasCity) {
+    if (business.city !== search.city) return false;
+    if (hasState && business.state !== search.state && business.state !== slugifyGeo(search.state)) {
+      return false;
+    }
+    if (hasCountry && business.country !== search.country) return false;
+    return true;
+  }
+
+  if (hasState) {
+    if (business.state !== search.state) return false;
+    if (hasCountry && business.country !== search.country) return false;
+    return true;
+  }
+
+  if (hasCountry) {
+    return business.country === search.country;
+  }
+
+  return false;
+}
+
