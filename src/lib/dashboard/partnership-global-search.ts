@@ -1,40 +1,32 @@
 import { fillContext } from "@/lib/dashboard/fill-context";
 import { getEditorialImageUrl } from "@/lib/dashboard/dashboard-images";
+import { directoryBusinessToOpportunity } from "@/lib/dashboard/partnership-directory-mapper";
+import { matchDirectoryBusinesses } from "@/lib/dashboard/partnership-directory";
+import {
+  addressMatchesResolvedLocation,
+  geocodeInputFromSearch,
+  resolveLocationSearch,
+} from "@/lib/dashboard/partnership-location";
+import {
+  enrichOpportunity,
+  type PartnershipOpportunity,
+} from "@/lib/dashboard/partnership-opportunities";
 import {
   fetchOsmHospitalityPlaces,
   fetchWikidataImageUrl,
   geocodeLocation,
   type OsmPlace,
 } from "@/lib/dashboard/partnership-osm";
-import {
-  matchDirectoryBusinesses,
-  type DirectoryBusiness,
-} from "@/lib/dashboard/partnership-directory";
-import {
-  enrichOpportunity,
-  type PartnershipOpportunity,
-} from "@/lib/dashboard/partnership-opportunities";
+import { rankPartnershipOpportunities } from "@/lib/dashboard/partnership-stage-ranking";
 import { PITCH_TEMPLATE_TITLES } from "@/lib/dashboard/pitch-templates";
 import type { CreatorContext } from "@/lib/plan/plan-generation-context";
 import type { LocationSearchInput } from "@/lib/dashboard/partnership-search";
 
-export type PartnershipTier = 1 | 2 | 3;
-
-const TIER_LABELS: Record<PartnershipTier, string> = {
+const TIER_LABELS: Record<1 | 2 | 3, string> = {
   1: "Tier 1 — Easy Wins",
   2: "Tier 2 — Established Partners",
   3: "Tier 3 — Luxury & Stretch",
 };
-
-export function directoryTierToNumber(tier: DirectoryBusiness["tier"]): PartnershipTier {
-  if (tier === "local") return 1;
-  if (tier === "boutique") return 2;
-  return 3;
-}
-
-function buildLocationString(input: LocationSearchInput): string {
-  return [input.city, input.state, input.country].filter((p) => p.trim()).join(", ");
-}
 
 function pitchForCategory(category: string): { id: string; title: string } {
   if (category.includes("Restaurant") || category.includes("Café")) {
@@ -46,7 +38,7 @@ function pitchForCategory(category: string): { id: string; title: string } {
   return { id: "boutique-hotel", title: PITCH_TEMPLATE_TITLES["boutique-hotel"] ?? "Boutique Hotel Pitch" };
 }
 
-function scoresForTier(tier: PartnershipTier): {
+function scoresForTier(tier: 1 | 2 | 3): {
   opportunityScore: number;
   difficultyScore: number;
   valueScore: number;
@@ -55,54 +47,6 @@ function scoresForTier(tier: PartnershipTier): {
   if (tier === 1) return { opportunityScore: 5, difficultyScore: 2, valueScore: 4, priority: "high" };
   if (tier === 2) return { opportunityScore: 4, difficultyScore: 3, valueScore: 4, priority: "medium" };
   return { opportunityScore: 3, difficultyScore: 4, valueScore: 5, priority: "explore" };
-}
-
-function tierDisplayLabel(tier: PartnershipTier): string {
-  return TIER_LABELS[tier];
-}
-
-function directoryToOpportunity(
-  business: DirectoryBusiness,
-  ctx: CreatorContext,
-  locationLabel: string
-): PartnershipOpportunity {
-  const tier = directoryTierToNumber(business.tier);
-  const pitch = pitchForCategory(business.category);
-  const scores = scoresForTier(tier);
-
-  const base: PartnershipOpportunity = {
-    id: `curated-${business.id}`,
-    businessName: business.businessName,
-    category: business.category,
-    description: business.description,
-    website: business.website,
-    instagram: business.instagram,
-    address: business.address,
-    contactEmail: business.contactEmail,
-    contactPerson: business.contactPerson,
-    contactWhere: fillContext(ctx, business.contactWhere),
-    outreachType: business.outreachType,
-    pitchTemplateId: business.pitchTemplateId,
-    pitchTemplateTitle: pitch.title,
-    matchReason: fillContext(ctx, business.matchHint),
-    whyYou: fillContext(ctx, business.whyYou),
-    doToday: fillContext(ctx, business.doToday),
-    priority: scores.priority,
-    imageUrl: business.imageUrl,
-    opportunityScore: business.opportunityScore,
-    difficultyScore: business.difficultyScore,
-    valueScore: business.valueScore,
-    tierLabel: tierDisplayLabel(tier),
-    partnershipTier: tier,
-    source: "curated",
-    recommendedPitch: fillContext(
-      ctx,
-      `Use ${pitch.title} — personalize with one detail from their Instagram and tie it to your {pillar} content.`
-    ),
-    searchLocation: locationLabel,
-  };
-
-  return enrichOpportunity(base, ctx);
 }
 
 async function osmToOpportunity(
@@ -161,7 +105,7 @@ async function osmToOpportunity(
     opportunityScore: scores.opportunityScore,
     difficultyScore: scores.difficultyScore,
     valueScore: scores.valueScore,
-    tierLabel: tierDisplayLabel(place.tier),
+    tierLabel: TIER_LABELS[place.tier],
     partnershipTier: place.tier,
     source: "discovered",
     recommendedPitch: fillContext(
@@ -180,8 +124,10 @@ export async function searchPartnershipOpportunitiesGlobal(
   ctx: CreatorContext,
   input: LocationSearchInput
 ): Promise<PartnershipOpportunity[]> {
-  const locationLabel = buildLocationString(input);
-  if (!locationLabel) return [];
+  const resolved = resolveLocationSearch(input);
+  if (!resolved.label) return [];
+
+  const geocodeInput = geocodeInputFromSearch(input, resolved);
 
   const curated = matchDirectoryBusinesses(input);
   const seenNames = new Set<string>();
@@ -191,17 +137,25 @@ export async function searchPartnershipOpportunitiesGlobal(
     const key = business.businessName.toLowerCase();
     if (seenNames.has(key)) continue;
     seenNames.add(key);
-    results.push(directoryToOpportunity(business, ctx, locationLabel));
+    results.push(
+      enrichOpportunity(
+        directoryBusinessToOpportunity(business, ctx, resolved.label),
+        ctx
+      )
+    );
   }
 
-  const shouldDiscover = input.city.trim().length > 0;
+  const shouldDiscover = geocodeInput.city.length > 0 || geocodeInput.country.length > 0;
   if (shouldDiscover && results.length < TARGET_RESULTS) {
-    const geo = await geocodeLocation(input);
+    const geo = await geocodeLocation(geocodeInput);
     if (geo) {
-      const osmPlaces = await fetchOsmHospitalityPlaces(geo, TARGET_RESULTS - results.length + 10);
+      const osmPlaces = await fetchOsmHospitalityPlaces(geo, TARGET_RESULTS - results.length + 20);
       const osmOpps = await Promise.all(
-        osmPlaces.map((place) => osmToOpportunity(place, ctx, locationLabel))
+        osmPlaces
+          .filter((place) => addressMatchesResolvedLocation(place.address, resolved))
+          .map((place) => osmToOpportunity(place, ctx, resolved.label))
       );
+
       for (const opp of osmOpps) {
         const key = opp.businessName.toLowerCase();
         if (seenNames.has(key)) continue;
@@ -212,7 +166,5 @@ export async function searchPartnershipOpportunitiesGlobal(
     }
   }
 
-  return results
-    .sort((a, b) => (a.partnershipTier ?? 2) - (b.partnershipTier ?? 2))
-    .slice(0, TARGET_RESULTS);
+  return rankPartnershipOpportunities(results, ctx).slice(0, TARGET_RESULTS);
 }

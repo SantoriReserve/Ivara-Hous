@@ -3,6 +3,8 @@
  * Supplements the curated directory for any city worldwide.
  */
 
+import { isMajorChainBrand } from "@/lib/dashboard/partnership-stage-ranking";
+
 export type OsmPlace = {
   osmId: string;
   name: string;
@@ -13,12 +15,17 @@ export type OsmPlace = {
   phone: string | null;
   wikidata: string | null;
   tier: 1 | 2 | 3;
+  lat: number;
+  lon: number;
 };
 
-type GeocodeResult = {
+export type GeocodeResult = {
   lat: number;
   lon: number;
   displayName: string;
+  city?: string;
+  state?: string;
+  country?: string;
 };
 
 const NOMINATIM_HEADERS = {
@@ -34,18 +41,37 @@ export async function geocodeLocation(input: {
   state: string;
   country: string;
 }): Promise<GeocodeResult | null> {
-  const parts = [input.city, input.state, input.country].filter((p) => p.trim());
-  if (parts.length === 0) return null;
+  const city = input.city.trim();
+  const state = input.state.trim();
+  const country = input.country.trim();
+  if (!city && !state && !country) return null;
 
-  const q = encodeURIComponent(parts.join(", "));
+  const params = new URLSearchParams({
+    format: "json",
+    limit: "1",
+    addressdetails: "1",
+  });
+
+  if (city) params.set("city", city);
+  if (state) params.set("state", state);
+  if (country) params.set("country", country);
+  if (!city && !state && country) params.set("country", country);
+  if (!params.has("city") && !params.has("state") && !params.has("country")) {
+    params.set("q", [city, state, country].filter(Boolean).join(", "));
+  }
+
   await sleep(1100);
-  const res = await fetch(
-    `https://nominatim.openstreetmap.org/search?q=${q}&format=json&limit=1&addressdetails=1`,
-    { headers: NOMINATIM_HEADERS }
-  );
+  const res = await fetch(`https://nominatim.openstreetmap.org/search?${params.toString()}`, {
+    headers: NOMINATIM_HEADERS,
+  });
   if (!res.ok) return null;
 
-  const data = (await res.json()) as Array<{ lat: string; lon: string; display_name: string }>;
+  const data = (await res.json()) as Array<{
+    lat: string;
+    lon: string;
+    display_name: string;
+    address?: Record<string, string>;
+  }>;
   const hit = data[0];
   if (!hit) return null;
 
@@ -53,6 +79,9 @@ export async function geocodeLocation(input: {
     lat: Number(hit.lat),
     lon: Number(hit.lon),
     displayName: hit.display_name,
+    city: hit.address?.city ?? hit.address?.town ?? hit.address?.village,
+    state: hit.address?.state,
+    country: hit.address?.country,
   };
 }
 
@@ -61,7 +90,7 @@ function buildAddress(tags: Record<string, string>): string {
   const parts = [
     tags["addr:housenumber"],
     tags["addr:street"],
-    tags["addr:city"] ?? tags["addr:town"],
+    tags["addr:city"] ?? tags["addr:town"] ?? tags["addr:place"],
     tags["addr:state"],
     tags["addr:country"],
   ].filter(Boolean);
@@ -71,37 +100,59 @@ function buildAddress(tags: Record<string, string>): string {
 function inferTier(name: string, category: string, tags: Record<string, string>): 1 | 2 | 3 {
   const lower = name.toLowerCase();
   const stars = Number(tags.stars ?? tags["tourism:hotel:stars"] ?? 0);
-  const luxuryWords = ["ritz", "four seasons", "mandarin", "rosewood", "aman", "st. regis", "peninsula", "bulgari", "edition", "waldorf", "park hyatt", "fairmont", "sofitel", "raffles", "luxury", "resort &"];
+
+  if (isMajorChainBrand(name)) {
+    return stars >= 5 ? 3 : 2;
+  }
+
+  const luxuryWords = ["palace", "grand hotel", "collection", "luxury", "resort &"];
   const chainWords = ["marriott", "hilton", "hyatt", "ihg", "accor", "wyndham", "radisson"];
 
-  if (luxuryWords.some((w) => lower.includes(w)) || stars >= 5) return 3;
-  if (chainWords.some((w) => lower.includes(w)) || stars >= 4) return 2;
+  if (luxuryWords.some((word) => lower.includes(word)) && stars >= 5) return 3;
+  if (chainWords.some((word) => lower.includes(word)) || stars >= 4) return 2;
   if (category.includes("Restaurant") || category.includes("Café")) return 1;
   if (category.includes("Experience")) return 2;
+  if (category.includes("Boutique")) return 1;
   return 1;
 }
 
 function categoryFromTags(tags: Record<string, string>): string {
   if (tags.tourism === "hotel" || tags.tourism === "guest_house") {
-    return tags.stars && Number(tags.stars) >= 4 ? "Luxury Hotel" : "Boutique Hotel";
+    if (tags.stars && Number(tags.stars) >= 4 && isMajorChainBrand(tags.name ?? "")) {
+      return "Luxury Hotel";
+    }
+    if (tags.stars && Number(tags.stars) >= 4) return "Small Luxury Hotel";
+    return "Boutique Hotel";
   }
   if (tags.tourism === "museum" || tags.tourism === "attraction" || tags.tourism === "theme_park") {
     return "Hospitality Experience";
   }
-  if (tags.amenity === "restaurant" || tags.amenity === "fast_food") return "Restaurant";
+  if (tags.amenity === "restaurant") return "Restaurant";
   if (tags.amenity === "cafe") return "Café";
   if (tags.tourism === "hostel") return "Boutique Hotel";
+  if (tags.tourism === "apartment") return "Luxury Villa";
   return "Hospitality Brand";
 }
 
 function parseOsmElement(
-  el: { id: number; tags?: Record<string, string> },
+  el: {
+    id: number;
+    lat?: number;
+    lon?: number;
+    center?: { lat: number; lon: number };
+    tags?: Record<string, string>;
+  },
   type: "node" | "way"
 ): OsmPlace | null {
   const tags = el.tags ?? {};
   const name = tags.name ?? tags["name:en"];
   if (!name || name.length < 2) return null;
   if (tags.disused === "yes" || tags.abandoned === "yes") return null;
+  if (tags.amenity === "fast_food") return null;
+
+  const lat = el.lat ?? el.center?.lat;
+  const lon = el.lon ?? el.center?.lon;
+  if (lat === undefined || lon === undefined) return null;
 
   const category = categoryFromTags(tags);
   return {
@@ -114,21 +165,37 @@ function parseOsmElement(
     phone: tags.phone ?? tags["contact:phone"] ?? null,
     wikidata: tags.wikidata ?? null,
     tier: inferTier(name, category, tags),
+    lat,
+    lon,
   };
+}
+
+function distanceKm(aLat: number, aLon: number, bLat: number, bLon: number): number {
+  const toRad = (value: number) => (value * Math.PI) / 180;
+  const dLat = toRad(bLat - aLat);
+  const dLon = toRad(bLon - aLon);
+  const lat1 = toRad(aLat);
+  const lat2 = toRad(bLat);
+  const h =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLon / 2) ** 2;
+  return 6371 * 2 * Math.atan2(Math.sqrt(h), Math.sqrt(1 - h));
 }
 
 export async function fetchOsmHospitalityPlaces(
   geo: GeocodeResult,
-  limit = 40
+  limit = 80
 ): Promise<OsmPlace[]> {
-  const radius = 12000;
+  const radius = 18000;
   const query = `
-    [out:json][timeout:25];
+    [out:json][timeout:35];
     (
-      node["tourism"~"hotel|guest_house|hostel|museum|attraction"](around:${radius},${geo.lat},${geo.lon});
+      node["tourism"~"hotel|guest_house|hostel|museum|attraction|apartment"](around:${radius},${geo.lat},${geo.lon});
+      way["tourism"~"hotel|guest_house|hostel|museum|attraction|apartment"](around:${radius},${geo.lat},${geo.lon});
       node["amenity"~"restaurant|cafe"](around:${radius},${geo.lat},${geo.lon});
+      way["amenity"~"restaurant|cafe"](around:${radius},${geo.lat},${geo.lon});
     );
-    out body ${limit + 20};
+    out center ${limit + 40};
   `;
 
   const endpoints = [
@@ -153,20 +220,27 @@ export async function fetchOsmHospitalityPlaces(
     }
   }
 
-  if (!res) return [];
-
-  if (!res.ok) return [];
+  if (!res?.ok) return [];
 
   const json = (await res.json()) as {
-    elements: Array<{ id: number; type: "node" | "way"; tags?: Record<string, string> }>;
+    elements: Array<{
+      id: number;
+      type: "node" | "way";
+      lat?: number;
+      lon?: number;
+      center?: { lat: number; lon: number };
+      tags?: Record<string, string>;
+    }>;
   };
 
   const places: OsmPlace[] = [];
   const seen = new Set<string>();
 
   for (const el of json.elements ?? []) {
-    const parsed = parseOsmElement(el, "node");
+    const parsed = parseOsmElement(el, el.type === "way" ? "way" : "node");
     if (!parsed) continue;
+    if (distanceKm(geo.lat, geo.lon, parsed.lat, parsed.lon) > 25) continue;
+
     const key = parsed.name.toLowerCase();
     if (seen.has(key)) continue;
     seen.add(key);
@@ -174,7 +248,12 @@ export async function fetchOsmHospitalityPlaces(
     if (places.length >= limit) break;
   }
 
-  return places.sort((a, b) => a.tier - b.tier);
+  return places.sort((a, b) => {
+    if (a.tier !== b.tier) return a.tier - b.tier;
+    const distA = distanceKm(geo.lat, geo.lon, a.lat, a.lon);
+    const distB = distanceKm(geo.lat, geo.lon, b.lat, b.lon);
+    return distA - distB;
+  });
 }
 
 export async function fetchWikidataImageUrl(wikidataId: string): Promise<string | null> {

@@ -71,9 +71,9 @@ export function PartnershipDiscovery({
         <p className="luxury-label mb-2 text-gray-muted">Opportunity Discovery</p>
         <h3 className="font-serif text-2xl text-black">Search by location</h3>
         <p className="mt-2 max-w-2xl font-sans text-sm text-gray-mid">
-          Search any city worldwide — curated premium targets plus live hospitality discovery
-          for hotels, restaurants, cafés, and experiences matched to your {creatorContext.niche}{" "}
-          positioning.
+          Search any city, state, or country — curated independent properties plus live hospitality
+          discovery for hotels, restaurants, cafés, wellness, and experiences matched to your{" "}
+          {creatorContext.niche} positioning and creator stage.
         </p>
 
         <form onSubmit={handleSearch} className="mt-6 grid gap-4 sm:grid-cols-3">
@@ -144,7 +144,8 @@ export function PartnershipDiscovery({
             />
           ) : (
             <p className="font-sans text-sm text-gray-mid">
-              Enter a city to search globally. Country-only searches use curated regional data.
+              Enter a city with country or state for the most accurate results. Try Miami, Barcelona,
+              or Cape Town — boutique and independent properties appear first for early-stage creators.
             </p>
           )}
         </section>
@@ -155,8 +156,8 @@ export function PartnershipDiscovery({
           <p className="luxury-label mb-2 text-gray-muted">Curated for You</p>
           <h3 className="font-serif text-2xl text-black">Your recommended pipeline</h3>
           <p className="mt-2 font-sans text-sm text-gray-mid">
-            Personalized targets based on your assessment — local fast wins plus dream-brand stretch
-            opportunities.
+            Stage-matched targets from your location — boutique and independent properties first,
+            with stretch luxury opportunities balanced for where you are now.
           </p>
         </div>
         <PartnershipOpportunitiesView opportunities={curatedOpportunities} showScores />

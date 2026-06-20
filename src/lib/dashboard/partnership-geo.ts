@@ -16,8 +16,10 @@ const CITY_ALIASES: Record<string, string> = {
   sf: "san-francisco",
   "miami beach": "miami",
   "south beach": "miami",
+  barcelona: "barcelona",
+  madrid: "madrid",
   "mexico city": "mexico-city",
-  "cdmx": "mexico-city",
+  cdmx: "mexico-city",
   "são paulo": "sao-paulo",
   "sao paulo": "sao-paulo",
   "punta cana": "punta-cana",
@@ -32,6 +34,12 @@ const CITY_ALIASES: Record<string, string> = {
   usa: "united-states",
   us: "united-states",
   america: "united-states",
+  spain: "spain",
+  france: "france",
+  italy: "italy",
+  mexico: "mexico",
+  "czech republic": "czech-republic",
+  "south africa": "south-africa",
 };
 
 const STATE_ALIASES: Record<string, string> = {
@@ -91,11 +99,16 @@ export function businessMatchesSearch(
   const hasCountry = Boolean(search.country);
 
   if (hasCity) {
-    return business.city === search.city;
+    if (business.city !== search.city) return false;
+    if (hasState && business.state !== search.state) return false;
+    if (hasCountry && business.country !== search.country) return false;
+    return true;
   }
 
   if (hasState) {
-    return business.state === search.state && business.country === (search.country || business.country);
+    if (business.state !== search.state) return false;
+    if (hasCountry && business.country !== search.country) return false;
+    return true;
   }
 
   if (hasCountry) {

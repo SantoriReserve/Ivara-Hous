@@ -23,3 +23,11 @@ export type DirectoryBusiness = {
   valueScore: number;
   imageUrl: string;
 };
+
+export type PartnershipTier = 1 | 2 | 3;
+
+export function directoryTierToNumber(tier: DirectoryBusiness["tier"]): PartnershipTier {
+  if (tier === "local") return 1;
+  if (tier === "boutique") return 2;
+  return 3;
+}
