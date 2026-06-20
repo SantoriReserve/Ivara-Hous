@@ -177,7 +177,7 @@ function buildOutreachGuidance(intel: Omit<PartnershipContactIntel, "outreachGui
   if (intel.instagram && intel.instagram.confidence === "likely") {
     return `Instagram ${intel.instagram.handle} (verify before outreach)`;
   }
-  if (intel.phone?.confidence !== "unavailable") {
+  if (intel.phone && intel.phone.confidence !== "unavailable") {
     return `Call ${intel.phone.number}`;
   }
   if (intel.website?.confidence === "verified") {
