@@ -239,10 +239,12 @@ async function appendOsmDiscoveries(
     seenNames.add(key);
 
     const website = place.website ?? "";
-    const instagram = normalizeInstagramHandle({
-      instagram: place.instagram ?? undefined,
-      "contact:instagram": place.instagram ?? undefined,
-    });
+    const instagram = place.instagram
+      ? normalizeInstagramHandle({
+          instagram: place.instagram,
+          "contact:instagram": place.instagram,
+        })
+      : null;
     const contactIntel = buildDiscoveredContactIntel({
       website: website || null,
       phone: place.phone,
