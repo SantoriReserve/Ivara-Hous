@@ -6,8 +6,8 @@ import {
   emptyContactIntel,
   finalizeContactIntel,
   mergeContactEmails,
-  type PartnershipContactIntel,
 } from "@/lib/dashboard/partnership-contact-intelligence";
+import type { PartnershipContactIntel } from "@/lib/dashboard/partnership-contact-types";
 import { normalizeWebsiteUrl } from "@/lib/dashboard/partnership-result-utils";
 
 const CONTACT_PATHS = ["/contact", "/press", "/media", "/partnerships", "/collaborate"];

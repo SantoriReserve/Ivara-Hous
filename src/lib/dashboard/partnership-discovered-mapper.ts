@@ -78,7 +78,9 @@ export function discoveredPlaceToOpportunity(
   const categories =
     "geoapify_categories" in place ? place.geoapify_categories : place.categories;
   const category =
-    "category" in place && place.category ? place.category : mapGeoapifyToCategory(categories);
+    "category" in place && "geoapify_categories" in place && place.category
+      ? place.category
+      : mapGeoapifyToCategory(categories);
 
   const tier = inferTierFromPlace(place.name, category);
   const pitch = pitchForCategory(category);
