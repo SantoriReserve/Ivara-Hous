@@ -5,6 +5,8 @@ import {
   getPartnershipObjectPosition,
 } from "@/lib/dashboard/dashboard-images";
 import { OPPORTUNITY_IMAGE_FALLBACK } from "@/lib/dashboard/opportunity-images";
+import type { ContactConfidence } from "@/lib/dashboard/partnership-contact-types";
+import { UNAVAILABLE_LABEL } from "@/lib/dashboard/partnership-contact-types";
 import {
   formatInstagramDisplay,
   formatWebsiteDisplay,
@@ -56,6 +58,119 @@ function ScoreStars({ score }: { score: number }) {
   );
 }
 
+function ConfidenceBadge({ confidence }: { confidence: ContactConfidence }) {
+  if (confidence === "unavailable") {
+    return (
+      <span className="ml-2 inline-block border border-black/10 px-1.5 py-0.5 font-sans text-[10px] uppercase tracking-nav text-gray-muted">
+        Unavailable
+      </span>
+    );
+  }
+
+  return (
+    <span
+      className={`ml-2 inline-block px-1.5 py-0.5 font-sans text-[10px] uppercase tracking-nav ${
+        confidence === "verified" ? "bg-black text-white" : "border border-black/20 text-black"
+      }`}
+    >
+      {confidence === "verified" ? "Verified" : "Likely"}
+    </span>
+  );
+}
+
+function ContactIntelligenceSection({ opp }: { opp: PartnershipOpportunity }) {
+  const intel = opp.contactIntel;
+  const websiteDisplay = formatWebsiteDisplay(opp.website);
+  const instagramDisplay = formatInstagramDisplay(opp.instagram);
+  const hasWebsite = websiteDisplay !== UNAVAILABLE_LABEL;
+  const hasInstagram = instagramDisplay !== UNAVAILABLE_LABEL;
+
+  return (
+    <div className="space-y-3">
+      <div>
+        <p className="luxury-label mb-1 text-gray-muted">Best outreach path</p>
+        <p className="font-sans text-sm text-black">{opp.contactWhere}</p>
+      </div>
+
+      <div>
+        <p className="luxury-label mb-1 text-gray-muted">Official website</p>
+        {hasWebsite && intel?.website ? (
+          <p className="font-sans text-sm text-black">
+            <a
+              href={intel.website.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="underline hover:opacity-60"
+            >
+              {websiteDisplay.replace(/^https?:\/\/(www\.)?/, "")}
+            </a>
+            <ConfidenceBadge confidence={intel.website.confidence} />
+          </p>
+        ) : (
+          <p className="font-sans text-sm text-gray-mid">
+            {UNAVAILABLE_LABEL}
+            <ConfidenceBadge confidence="unavailable" />
+          </p>
+        )}
+      </div>
+
+      <div>
+        <p className="luxury-label mb-1 text-gray-muted">Instagram</p>
+        {hasInstagram && intel?.instagram ? (
+          <p className="font-sans text-sm text-black">
+            {instagramDisplay}
+            <ConfidenceBadge confidence={intel.instagram.confidence} />
+          </p>
+        ) : (
+          <p className="font-sans text-sm text-gray-mid">
+            {UNAVAILABLE_LABEL}
+            <ConfidenceBadge confidence="unavailable" />
+          </p>
+        )}
+      </div>
+
+      {intel && intel.emails.length > 0 && (
+        <div>
+          <p className="luxury-label mb-1 text-gray-muted">Email contacts</p>
+          <ul className="space-y-1">
+            {intel.emails.map((entry) => (
+              <li key={entry.email} className="font-sans text-sm text-black">
+                <a href={`mailto:${entry.email}`} className="underline hover:opacity-60">
+                  {entry.email}
+                </a>
+                <span className="text-gray-mid"> · {entry.department}</span>
+                <ConfidenceBadge confidence={entry.confidence} />
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {intel?.contactPerson && (
+        <div>
+          <p className="luxury-label mb-1 text-gray-muted">Contact person</p>
+          <p className="font-sans text-sm text-black">
+            {intel.contactPerson.title
+              ? `${intel.contactPerson.name} — ${intel.contactPerson.title}`
+              : intel.contactPerson.name}
+            <ConfidenceBadge confidence={intel.contactPerson.confidence} />
+          </p>
+        </div>
+      )}
+
+      {intel?.phone && (
+        <div>
+          <p className="luxury-label mb-1 text-gray-muted">Phone</p>
+          <p className="font-sans text-sm text-black">
+            {intel.phone.number}
+            <ConfidenceBadge confidence={intel.phone.confidence} />
+          </p>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function OpportunityCard({
   opp,
   showScores,
@@ -63,9 +178,6 @@ function OpportunityCard({
   opp: PartnershipOpportunity;
   showScores: boolean;
 }) {
-  const instagram = formatInstagramDisplay(opp.instagram);
-  const website = formatWebsiteDisplay(opp.website);
-  const hasWebsite = website !== "Not available";
   const locationLabel = opp.searchLocation ?? opp.address?.split(",").slice(-2).join(", ").trim();
 
   return (
@@ -87,7 +199,7 @@ function OpportunityCard({
             </h3>
             {opp.source === "discovered" && (
               <p className="mt-1 font-sans text-[10px] uppercase tracking-nav text-gray-muted">
-                Live discovery · OpenStreetMap verified
+                Live discovery · Geoapify verified
               </p>
             )}
             {locationLabel && (
@@ -144,36 +256,8 @@ function OpportunityCard({
           )}
 
           <div>
-            <p className="luxury-label mb-1 text-gray-muted">Contact</p>
-            {opp.contactPerson && (
-              <p className="font-sans text-sm text-black">{opp.contactPerson}</p>
-            )}
-            {opp.contactEmail && (
-              <p className="font-sans text-sm font-medium text-black">
-                <a href={`mailto:${opp.contactEmail}`} className="underline hover:opacity-60">
-                  {opp.contactEmail}
-                </a>
-              </p>
-            )}
-            <p className="font-sans text-sm text-black">{opp.contactWhere}</p>
-            <p className="mt-1 font-sans text-xs text-gray-mid">
-              Instagram: {instagram}
-              {hasWebsite ? (
-                <>
-                  {" · "}
-                  <a
-                    href={opp.website}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="underline hover:opacity-60"
-                  >
-                    {website.replace(/^https?:\/\/(www\.)?/, "")}
-                  </a>
-                </>
-              ) : (
-                <> · Website: Not available</>
-              )}
-            </p>
+            <p className="luxury-label mb-2 text-gray-muted">Contact intelligence</p>
+            <ContactIntelligenceSection opp={opp} />
           </div>
 
           <div>

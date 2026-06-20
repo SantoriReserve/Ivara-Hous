@@ -1,4 +1,8 @@
 import { fillContext } from "@/lib/dashboard/fill-context";
+import {
+  applyContactIntelToOpportunityFields,
+  buildCuratedContactIntel,
+} from "@/lib/dashboard/partnership-contact-intelligence";
 import type { DirectoryBusiness } from "@/lib/dashboard/partnership-directory-types";
 import type { PartnershipOpportunity } from "@/lib/dashboard/partnership-opportunities";
 import { directoryTierToNumber } from "@/lib/dashboard/partnership-directory-types";
@@ -41,18 +45,21 @@ export function directoryBusinessToOpportunity(
   const tier = directoryTierToNumber(business.tier);
   const pitch = pitchForCategory(business.category);
   const scores = scoresForDirectoryTier(tier);
+  const contactIntel = buildCuratedContactIntel(business);
+  const contactFields = applyContactIntelToOpportunityFields(contactIntel);
 
   return {
     id: `${idPrefix}-${business.id}`,
     businessName: business.businessName,
     category: business.category,
     description: business.description,
-    website: business.website,
-    instagram: business.instagram,
+    website: contactFields.website,
+    instagram: contactFields.instagram,
     address: business.address,
-    contactEmail: business.contactEmail,
-    contactPerson: business.contactPerson,
-    contactWhere: fillContext(ctx, business.contactWhere),
+    contactEmail: contactFields.contactEmail,
+    contactPerson: contactFields.contactPerson,
+    contactWhere: fillContext(ctx, contactIntel.outreachGuidance),
+    contactIntel,
     outreachType: business.outreachType,
     pitchTemplateId: business.pitchTemplateId,
     pitchTemplateTitle: pitch.title,

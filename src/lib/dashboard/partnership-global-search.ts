@@ -1,3 +1,4 @@
+import { fillContext } from "@/lib/dashboard/fill-context";
 import { directoryBusinessToOpportunity } from "@/lib/dashboard/partnership-directory-mapper";
 import { matchDirectoryBusinesses } from "@/lib/dashboard/partnership-directory";
 import type { CachedPartnershipPlace } from "@/lib/dashboard/partnership-cache-repository";
@@ -7,11 +8,17 @@ import {
   getCachedLocationSearch,
   getPlacesByIds,
   logPartnershipSearch,
+  refreshPlaceContactIntel,
   refreshPlaceImages,
   setCachedCityGeocode,
   setCachedLocationSearch,
   upsertPartnershipPlaces,
 } from "@/lib/dashboard/partnership-cache-repository";
+import { enrichContactForWebsites } from "@/lib/dashboard/partnership-contact-enrichment";
+import {
+  applyContactIntelToOpportunityFields,
+  buildDiscoveredContactIntel,
+} from "@/lib/dashboard/partnership-contact-intelligence";
 import {
   getPartnershipMaxResults,
   isGeoapifyEnabled,
@@ -41,7 +48,10 @@ import {
 } from "@/lib/dashboard/partnership-osm";
 import { discoveredPlaceMatchesResolvedLocation } from "@/lib/dashboard/partnership-place-matching";
 import { getVerifiedPropertyImageUrl } from "@/lib/dashboard/partnership-property-images";
-import { isVerifiedPartnershipOpportunity } from "@/lib/dashboard/partnership-result-utils";
+import {
+  isVerifiedPartnershipOpportunity,
+  normalizeInstagramHandle,
+} from "@/lib/dashboard/partnership-result-utils";
 import { rankPartnershipOpportunities } from "@/lib/dashboard/partnership-stage-ranking";
 import type { CreatorContext } from "@/lib/plan/plan-generation-context";
 import type { LocationSearchInput } from "@/lib/dashboard/partnership-search";
@@ -49,6 +59,36 @@ import type { LocationSearchInput } from "@/lib/dashboard/partnership-search";
 type SearchOptions = {
   userId?: string;
 };
+
+async function enrichAndCacheContacts(storedPlaces: CachedPartnershipPlace[]): Promise<void> {
+  const pending = storedPlaces.filter(
+    (place) =>
+      place.website &&
+      (!place.contact_intelligence ||
+        (!place.contact_intelligence.emails.length &&
+          place.contact_intelligence.website?.confidence !== "verified"))
+  );
+  if (pending.length === 0) return;
+
+  const contactUpdates = await enrichContactForWebsites(
+    pending.map((place) => ({
+      id: place.id,
+      website: place.website,
+      phone: place.phone,
+    })),
+    4
+  );
+
+  if (contactUpdates.length > 0) {
+    await refreshPlaceContactIntel(
+      contactUpdates.map((update) => ({
+        id: update.id,
+        contact: update.contact,
+        instagram: update.contact.instagram?.handle ?? null,
+      }))
+    );
+  }
+}
 
 async function enrichAndCacheImages(storedPlaces: CachedPartnershipPlace[]): Promise<void> {
   const pending = storedPlaces.filter((place) => place.website && !place.image_url);
@@ -199,24 +239,45 @@ async function appendOsmDiscoveries(
     seenNames.add(key);
 
     const website = place.website ?? "";
+    const instagram = normalizeInstagramHandle({
+      instagram: place.instagram ?? undefined,
+      "contact:instagram": place.instagram ?? undefined,
+    });
+    const contactIntel = buildDiscoveredContactIntel({
+      website: website || null,
+      phone: place.phone,
+      instagram,
+      instagramSource: instagram ? "osm" : undefined,
+    });
+    const contactFields = applyContactIntelToOpportunityFields(contactIntel);
+
     const opp = enrichOpportunity(
       {
         id: `osm-${place.osmId.replace("/", "-")}`,
         businessName: place.name,
         category: place.category,
         description: `${place.name} is a verified ${place.category.toLowerCase()} in ${locationLabel}.`,
-        website,
-        instagram: place.instagram ?? "Not available",
+        website: contactFields.website,
+        instagram: contactFields.instagram,
         address: place.address,
-        contactWhere: website
-          ? `Use the contact form on ${website.replace(/^https?:\/\/(www\.)?/, "")}`
-          : "Contact details on property website",
+        contactEmail: contactFields.contactEmail,
+        contactPerson: contactFields.contactPerson,
+        contactWhere: fillContext(ctx, contactIntel.outreachGuidance),
+        contactIntel,
         outreachType: "Partnership Pitch",
         pitchTemplateId: "boutique-hotel",
         pitchTemplateTitle: "Boutique Hotel Pitch",
         matchReason: `Verified ${place.category.toLowerCase()} in ${locationLabel}.`,
         whyYou: `${place.name} is matched for your creator stage.`,
-        doToday: `Reach out to ${place.name} with a personalized pitch.`,
+        doToday: contactFields.contactEmail
+          ? fillContext(
+              ctx,
+              `Send your pitch to ${contactFields.contactEmail} with one specific detail from ${place.name}.`
+            )
+          : fillContext(
+              ctx,
+              `Research verified contact details for ${place.name} before sending your pitch.`
+            ),
         priority: "medium",
         imageUrl: getVerifiedPropertyImageUrl(`osm-${place.osmId}`) ?? "",
         opportunityScore: 4,
@@ -225,7 +286,7 @@ async function appendOsmDiscoveries(
         tierLabel: "Tier 2 — Established Partners",
         partnershipTier: place.tier,
         source: "discovered",
-        recommendedPitch: "Personalize your outreach for {pillar} content.",
+        recommendedPitch: fillContext(ctx, "Personalize your outreach for {pillar} content."),
         searchLocation: locationLabel,
       },
       ctx
@@ -321,11 +382,22 @@ export async function searchPartnershipOpportunitiesGlobal(
           resolved.country
         );
 
-        const upsertPayload = merged.map((entry) => ({
-          ...entry,
-          imageUrl: entry.imageUrl ?? null,
-          imageSource: entry.imageSource ?? null,
-        }));
+        const upsertPayload = merged.map((entry) => {
+          const contactIntelligence = buildDiscoveredContactIntel({
+            website: entry.place.website,
+            phone: entry.place.phone,
+            instagram: entry.place.instagram,
+            instagramSource: entry.place.instagram ? "geoapify" : undefined,
+          });
+
+          return {
+            ...entry,
+            imageUrl: entry.imageUrl ?? null,
+            imageSource: entry.imageSource ?? null,
+            instagram: entry.place.instagram,
+            contactIntelligence,
+          };
+        });
 
         const storedPlaces = await upsertPartnershipPlaces(upsertPayload);
         const storedByExternalId = new Map(storedPlaces.map((row) => [row.external_id, row]));
@@ -359,6 +431,7 @@ export async function searchPartnershipOpportunitiesGlobal(
         }
 
         void enrichAndCacheImages(storedPlaces);
+        void enrichAndCacheContacts(storedPlaces);
       }
     }
   } else if (shouldDiscover) {

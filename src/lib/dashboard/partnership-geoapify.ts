@@ -22,6 +22,7 @@ export type GeoapifyPlace = {
   lng: number;
   website: string | null;
   phone: string | null;
+  instagram: string | null;
 };
 
 type GeoapifyFeature = {
@@ -65,6 +66,33 @@ function extractPhone(props: Record<string, unknown>): string | null {
   return null;
 }
 
+function extractInstagram(props: Record<string, unknown>): string | null {
+  const direct = asString(props.instagram);
+  if (direct) return direct;
+
+  const datasource = props.datasource;
+  if (datasource && typeof datasource === "object") {
+    const ds = datasource as Record<string, unknown>;
+    const candidates = [
+      asString(ds.instagram),
+      asString(ds["contact:instagram"]),
+      asString(ds["contact:social"]),
+    ].filter(Boolean) as string[];
+
+    for (const raw of candidates) {
+      const handle = raw
+        .replace(/^https?:\/\/(www\.)?instagram\.com\//i, "")
+        .replace(/\/.*$/, "")
+        .replace(/^@/, "");
+      if (handle && handle.length >= 2 && !handle.includes(" ")) {
+        return `@${handle}`;
+      }
+    }
+  }
+
+  return null;
+}
+
 function parseFeature(feature: GeoapifyFeature): GeoapifyPlace | null {
   const props = feature.properties ?? {};
   const name = asString(props.name);
@@ -101,6 +129,7 @@ function parseFeature(feature: GeoapifyFeature): GeoapifyPlace | null {
     lng,
     website: extractWebsite(props),
     phone: extractPhone(props),
+    instagram: extractInstagram(props),
   };
 }
 

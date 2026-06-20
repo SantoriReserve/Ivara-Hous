@@ -9,6 +9,8 @@ import { rankPartnershipOpportunities } from "@/lib/dashboard/partnership-stage-
 import { PITCH_TEMPLATE_TITLES } from "@/lib/dashboard/pitch-templates";
 import type { CreatorContext } from "@/lib/plan/plan-generation-context";
 
+import type { PartnershipContactIntel } from "@/lib/dashboard/partnership-contact-types";
+
 export type PartnershipOpportunity = {
   id: string;
   businessName: string;
@@ -20,6 +22,7 @@ export type PartnershipOpportunity = {
   contactEmail?: string | null;
   contactPerson?: string | null;
   contactWhere: string;
+  contactIntel?: PartnershipContactIntel;
   outreachType: string;
   matchReason: string;
   whyYou: string;

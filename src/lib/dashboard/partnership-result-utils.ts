@@ -76,12 +76,13 @@ export function normalizeInstagramHandle(
 }
 
 export function formatInstagramDisplay(handle: string | null | undefined): string {
-  if (!handle?.trim()) return "Not available";
+  if (!handle?.trim()) return "Not Available";
+  if (/not available/i.test(handle.trim())) return "Not Available";
   const normalized = handle.trim().startsWith("@") ? handle.trim() : `@${handle.trim()}`;
   return normalized;
 }
 
 export function formatWebsiteDisplay(website: string | null | undefined): string {
-  if (!website?.trim() || website.includes("google.com/search")) return "Not available";
+  if (!website?.trim() || website.includes("google.com/search")) return "Not Available";
   return website.trim();
 }

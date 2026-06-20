@@ -1,6 +1,11 @@
 import { fillContext } from "@/lib/dashboard/fill-context";
 import { getCategoryImageAsset } from "@/lib/dashboard/dashboard-images";
 import type { CachedPartnershipPlace } from "@/lib/dashboard/partnership-cache-repository";
+import {
+  applyContactIntelToOpportunityFields,
+  buildDiscoveredContactIntel,
+  contactIntelFromCachedPlace,
+} from "@/lib/dashboard/partnership-contact-intelligence";
 import type { GeoapifyPlace } from "@/lib/dashboard/partnership-geoapify";
 import {
   inferTierFromPlace,
@@ -8,7 +13,6 @@ import {
 } from "@/lib/dashboard/partnership-geoapify-categories";
 import type { PartnershipOpportunity } from "@/lib/dashboard/partnership-opportunities";
 import { PITCH_TEMPLATE_TITLES } from "@/lib/dashboard/pitch-templates";
-import { formatInstagramDisplay, normalizeWebsiteUrl } from "@/lib/dashboard/partnership-result-utils";
 import type { CreatorContext } from "@/lib/plan/plan-generation-context";
 
 const TIER_LABELS: Record<1 | 2 | 3, string> = {
@@ -42,12 +46,27 @@ function fallbackImage(category: string, seed: string): string {
   return getCategoryImageAsset(category, seed).src;
 }
 
-function contactWhereForPlace(website: string, phone: string | null): string {
-  if (phone) return `Call ${phone} — or use the website contact form`;
-  if (website) {
-    return `Use the contact form on ${website.replace(/^https?:\/\/(www\.)?/, "")}`;
+function buildContactIntel(
+  place: GeoapifyPlace | CachedPartnershipPlace
+): ReturnType<typeof buildDiscoveredContactIntel> {
+  if ("contact_intelligence" in place) {
+    const cached = contactIntelFromCachedPlace(place);
+    if (cached) return cached;
   }
-  return "Contact details on property website";
+
+  const instagram =
+    "instagram" in place && place.instagram
+      ? place.instagram
+      : "placeId" in place
+        ? place.instagram
+        : null;
+
+  return buildDiscoveredContactIntel({
+    website: place.website,
+    phone: place.phone,
+    instagram,
+    instagramSource: instagram ? "geoapify" : undefined,
+  });
 }
 
 export function discoveredPlaceToOpportunity(
@@ -64,25 +83,47 @@ export function discoveredPlaceToOpportunity(
   const tier = inferTierFromPlace(place.name, category);
   const pitch = pitchForCategory(category);
   const scores = scoresForTier(tier);
-  const website = normalizeWebsiteUrl(place.website) ?? "";
-  const instagram = formatInstagramDisplay(null);
+  const contactIntel = buildContactIntel(place);
+  const contactFields = applyContactIntelToOpportunityFields(contactIntel);
   const externalId = "external_id" in place ? place.external_id : place.placeId;
   const resolvedImage =
     imageUrl ??
     ("image_url" in place ? place.image_url : null) ??
     fallbackImage(category, `geoapify-${externalId}-${category}`);
 
+  const topEmail = contactIntel.emails[0];
+  const doToday = topEmail
+    ? fillContext(
+        ctx,
+        `Send ${pitch.title} to ${topEmail.email}. Reference one specific detail from ${place.name} and tie it to your {pillar} content.`
+      )
+    : contactIntel.instagram?.confidence === "verified"
+      ? fillContext(
+          ctx,
+          `Send ${pitch.title} to ${contactIntel.instagram.handle}. Open with one visual detail from their feed tied to your {pillar} content.`
+        )
+      : contactFields.website
+        ? fillContext(
+            ctx,
+            `Send ${pitch.title} via the official website contact form. Reference one specific detail from ${place.name}.`
+          )
+        : fillContext(
+            ctx,
+            `Research ${place.name}'s official website for verified contact details before sending ${pitch.title}.`
+          );
+
   return {
     id: `geoapify-${externalId}`,
     businessName: place.name,
     category,
     description: `${place.name} is a verified ${category.toLowerCase()} in ${locationLabel} — matched to your creator stage for hospitality partnerships.`,
-    website,
-    instagram,
+    website: contactFields.website,
+    instagram: contactFields.instagram,
     address: place.address,
-    contactEmail: null,
-    contactPerson: null,
-    contactWhere: fillContext(ctx, contactWhereForPlace(website, place.phone)),
+    contactEmail: contactFields.contactEmail,
+    contactPerson: contactFields.contactPerson,
+    contactWhere: fillContext(ctx, contactIntel.outreachGuidance),
+    contactIntel,
     outreachType: pitch.title,
     pitchTemplateId: pitch.id,
     pitchTemplateTitle: pitch.title,
@@ -94,12 +135,7 @@ export function discoveredPlaceToOpportunity(
       ctx,
       `${place.name} is a Tier ${tier} outreach target for {stage} creators in {location}.`
     ),
-    doToday: fillContext(
-      ctx,
-      website
-        ? `Send ${pitch.title} via the website contact form. Reference one specific design or experience detail from ${place.name}.`
-        : `Send ${pitch.title} to ${place.name}. Open with one visual detail tied to your {pillar} content.`
-    ),
+    doToday,
     priority: scores.priority,
     imageUrl: resolvedImage,
     opportunityScore: scores.opportunityScore,

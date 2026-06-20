@@ -5,6 +5,7 @@ import {
   getPartnershipCityCacheTtlDays,
 } from "@/lib/dashboard/partnership-config";
 import type { GeoapifyPlace } from "@/lib/dashboard/partnership-geoapify";
+import type { PartnershipContactIntel } from "@/lib/dashboard/partnership-contact-types";
 
 export type CachedPartnershipPlace = {
   id: string;
@@ -21,6 +22,8 @@ export type CachedPartnershipPlace = {
   lng: number;
   website: string | null;
   phone: string | null;
+  instagram: string | null;
+  contact_intelligence: PartnershipContactIntel | null;
   image_url: string | null;
   image_source: string | null;
   fetched_at: string;
@@ -145,7 +148,7 @@ export async function getPlacesByIds(ids: string[]): Promise<CachedPartnershipPl
     const { data, error } = await supabase
       .from("partnership_places")
       .select(
-        "id, external_id, source, name, category, geoapify_categories, address, city_key, state, country, lat, lng, website, phone, image_url, image_source, fetched_at, expires_at"
+        "id, external_id, source, name, category, geoapify_categories, address, city_key, state, country, lat, lng, website, phone, instagram, contact_intelligence, image_url, image_source, fetched_at, expires_at"
       )
       .in("id", ids);
 
@@ -169,6 +172,8 @@ export async function upsertPartnershipPlaces(
     country: string;
     imageUrl?: string | null;
     imageSource?: string | null;
+    instagram?: string | null;
+    contactIntelligence?: PartnershipContactIntel | null;
   }>
 ): Promise<CachedPartnershipPlace[]> {
   if (places.length === 0) return [];
@@ -178,7 +183,8 @@ export async function upsertPartnershipPlaces(
     const expiresAt = cacheExpiryIso(getPartnershipCacheTtlDays());
     const now = new Date().toISOString();
 
-    const rows = places.map(({ place, category, cityKey, state, country, imageUrl, imageSource }) => ({
+    const rows = places.map(
+      ({ place, category, cityKey, state, country, imageUrl, imageSource, instagram, contactIntelligence }) => ({
       external_id: place.placeId,
       source: "geoapify",
       name: place.name,
@@ -192,19 +198,22 @@ export async function upsertPartnershipPlaces(
       lng: place.lng,
       website: place.website,
       phone: place.phone,
+      instagram: instagram ?? place.instagram ?? null,
+      contact_intelligence: contactIntelligence ?? null,
       image_url: imageUrl ?? null,
       image_source: imageSource ?? null,
       raw_data: place,
       fetched_at: now,
       expires_at: expiresAt,
       updated_at: now,
-    }));
+    })
+    );
 
     const { data, error } = await supabase
       .from("partnership_places")
       .upsert(rows, { onConflict: "source,external_id" })
       .select(
-        "id, external_id, source, name, category, geoapify_categories, address, city_key, state, country, lat, lng, website, phone, image_url, image_source, fetched_at, expires_at"
+        "id, external_id, source, name, category, geoapify_categories, address, city_key, state, country, lat, lng, website, phone, instagram, contact_intelligence, image_url, image_source, fetched_at, expires_at"
       );
 
     if (error || !data) return [];
@@ -297,5 +306,29 @@ export async function refreshPlaceImages(
     );
   } catch {
     // Best-effort image cache refresh.
+  }
+}
+
+export async function refreshPlaceContactIntel(
+  updates: Array<{ id: string; contact: PartnershipContactIntel; instagram?: string | null }>
+): Promise<void> {
+  if (updates.length === 0) return;
+
+  try {
+    const supabase = getSupabaseAdmin();
+    await Promise.all(
+      updates.map((update) =>
+        supabase
+          .from("partnership_places")
+          .update({
+            contact_intelligence: update.contact,
+            instagram: update.instagram ?? update.contact.instagram?.handle ?? null,
+            updated_at: new Date().toISOString(),
+          })
+          .eq("id", update.id)
+      )
+    );
+  } catch {
+    // Best-effort contact cache refresh.
   }
 }
