@@ -1,7 +1,9 @@
 import Link from "next/link";
+import Image from "next/image";
 import { LearningInsightForm } from "@/components/dashboard/LearningInsightForm";
 import { TodayContentFocus } from "@/components/dashboard/TodayContentFocus";
 import type { DayFocus } from "@/lib/dashboard/day-focus";
+import { getHubCardImage } from "@/lib/dashboard/dashboard-images";
 
 type TodayFocusViewProps = {
   focus: DayFocus;
@@ -18,11 +20,22 @@ export function TodayFocusView({
 }: TodayFocusViewProps) {
   return (
     <div className="space-y-6">
-      <section className="border border-black bg-black p-6 text-white md:p-8">
-        <p className="font-sans text-[10px] uppercase tracking-nav text-white/60">
-          Today&apos;s Focus
-        </p>
-        <h3 className="mt-2 font-serif text-2xl md:text-3xl">{focus.mainObjective}</h3>
+      <section className="relative overflow-hidden border border-black bg-black p-6 text-white md:p-8">
+        <Image
+          src={getHubCardImage("today")}
+          alt=""
+          fill
+          className="object-cover opacity-25"
+          style={{ objectPosition: "center 35%" }}
+          sizes="100vw"
+        />
+        <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/60 to-black/40" />
+        <div className="relative">
+          <p className="font-sans text-[10px] uppercase tracking-nav text-white/60">
+            Today&apos;s Focus
+          </p>
+          <h3 className="mt-2 font-serif text-2xl md:text-3xl">{focus.mainObjective}</h3>
+        </div>
       </section>
 
       <div className="grid gap-4 md:grid-cols-2">

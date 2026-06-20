@@ -23,7 +23,7 @@ export function PlanDayCard({
   return (
     <Link
       href={`${ROUTES.dashboardToday}?day=${dayNumber}`}
-      className={`block border p-4 transition-colors hover:bg-black/5 ${
+      className={`block border bg-white p-5 transition-all duration-luxury ease-luxury hover:border-black/25 hover:shadow-[0_8px_24px_rgba(0,0,0,0.05)] ${
         isComplete
           ? "border-black/20 bg-black/5"
           : inProgress
@@ -39,7 +39,7 @@ export function PlanDayCard({
           {focusArea}
         </span>
       </div>
-      <p className="mt-2 font-sans text-sm text-black">{title}</p>
+      <p className="mt-2 font-serif text-base font-normal tracking-tight text-black">{title}</p>
       <p className="mt-2 font-sans text-xs text-gray-mid">
         {completedTasks}/{totalTasks} tasks
         {isComplete && " · Complete"}

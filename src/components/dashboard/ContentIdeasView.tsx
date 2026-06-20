@@ -9,6 +9,7 @@ import {
 import { FallbackImage } from "@/components/dashboard/FallbackImage";
 import type { ContentIdeaProgress } from "@/lib/dashboard/dashboard-engagement-repository";
 import type { ContentIdea } from "@/lib/dashboard/content-ideas";
+import { getContentIdeaImageAsset } from "@/lib/dashboard/dashboard-images";
 import { CONTENT_IMAGE_FALLBACK, getContentIdeaImage } from "@/lib/dashboard/opportunity-images";
 
 type ContentIdeasViewProps = {
@@ -135,28 +136,29 @@ export function ContentIdeasView({
         </p>
       </div>
 
-      <div className="grid gap-6 md:grid-cols-2">
+      <div className="grid gap-8 md:grid-cols-2">
         {ideas.map((idea) => {
           const progress = localProgress[idea.id] ?? progressForIdea(idea.id, initialProgress);
           const formatStyle = FORMAT_COLORS[idea.format] ?? "border border-black/20";
+          const imageAsset = getContentIdeaImageAsset(idea.format, idea.id);
 
           return (
             <article
               key={idea.id}
               id={idea.id}
-              className="flex flex-col overflow-hidden border border-black/10"
+              className="group flex flex-col overflow-hidden border border-black/10 bg-white transition-all duration-luxury ease-luxury hover:border-black/20 hover:shadow-[0_12px_40px_rgba(0,0,0,0.06)]"
             >
               <FallbackImage
                 src={getContentIdeaImage(idea.id, idea.format)}
                 fallbackSrc={CONTENT_IMAGE_FALLBACK}
                 alt={`${idea.format} inspiration — ${idea.title}`}
-                aspectClassName="relative aspect-[3/2] w-full bg-black/5"
-                sizes="(max-width: 768px) 100vw, 50vw"
+                objectPosition={imageAsset.objectPosition}
+                sizes="(max-width: 768px) 100vw, (max-width: 1280px) 50vw, 640px"
               >
-                <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
-                <div className="absolute bottom-4 left-4 right-4 flex items-end justify-between gap-2">
+                <div className="absolute inset-0 bg-gradient-to-t from-black/55 via-black/10 to-transparent" />
+                <div className="absolute bottom-5 left-5 right-5 flex items-end justify-between gap-2">
                   <span
-                    className={`px-2 py-0.5 font-sans text-[10px] uppercase tracking-nav ${formatStyle}`}
+                    className={`px-2.5 py-1 font-sans text-[10px] uppercase tracking-nav ${formatStyle}`}
                   >
                     {idea.format}
                   </span>
@@ -166,11 +168,11 @@ export function ContentIdeasView({
                 </div>
               </FallbackImage>
 
-              <div className="flex flex-1 flex-col p-6">
+              <div className="flex flex-1 flex-col p-6 sm:p-7">
                 <div className="flex items-center justify-between gap-3">
                   <span className="font-sans text-xs text-gray-muted">~{idea.estimatedTime}</span>
                 </div>
-                <h3 className="mt-2 font-serif text-xl font-normal tracking-tight text-black">
+                <h3 className="mt-2 font-serif text-xl font-normal tracking-tight text-black sm:text-2xl">
                   {idea.title}
                 </h3>
                 <p className="mt-3 font-sans text-sm leading-relaxed text-gray-mid">

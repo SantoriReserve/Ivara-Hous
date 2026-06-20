@@ -18,7 +18,7 @@ export function WinsProgressView({ plan, recentWins, nextAction }: WinsProgressV
 
   return (
     <div className="space-y-10">
-      <section className="grid gap-8 border border-black/10 p-8 md:grid-cols-[auto_1fr] md:items-center">
+      <section className="grid gap-8 overflow-hidden border border-black/10 bg-white p-8 md:grid-cols-[auto_1fr] md:items-center">
         <PlanProgressRing percentage={plan.completionPercentage} size={160} />
         <div className="space-y-6">
           <div>

@@ -3,7 +3,7 @@ import {
   resolveGeoKeys,
   SUPPORTED_CITY_LABELS,
 } from "@/lib/dashboard/partnership-geo";
-import { partnershipImageUrl } from "@/lib/dashboard/partnership-image-pool";
+import { getPartnershipImageUrl } from "@/lib/dashboard/dashboard-images";
 import {
   RAW_PARTNERSHIP_ENTRIES,
   type RawPartnershipEntry,
@@ -76,7 +76,7 @@ export function buildDirectoryBusiness(entry: RawPartnershipEntry): DirectoryBus
     opportunityScore: entry.opportunityScore,
     difficultyScore: entry.difficultyScore,
     valueScore: entry.valueScore,
-    imageUrl: partnershipImageUrl(entry.category, entry.id),
+    imageUrl: getPartnershipImageUrl(entry.category, entry.id),
   };
 }
 

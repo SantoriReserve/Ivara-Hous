@@ -14,7 +14,7 @@ export function DashboardShell({ children, userEmail, userName }: DashboardShell
   const displayName = userName?.trim() || userEmail;
 
   return (
-    <div className="min-h-[calc(100vh-4.5rem)] overflow-x-hidden bg-white lg:min-h-[calc(100vh-6rem)]">
+    <div className="min-h-[calc(100vh-4.5rem)] overflow-x-hidden bg-[#fafafa] lg:min-h-[calc(100vh-6rem)]">
       <div className="border-b border-black/10 bg-black text-white">
         <div className="luxury-container flex flex-col gap-6 py-6 sm:py-8 lg:flex-row lg:items-center lg:justify-between">
           <div className="min-w-0">

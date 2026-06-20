@@ -122,7 +122,8 @@ function uniqueImageUrls(results: ReturnType<typeof searchPartnershipOpportuniti
 
 async function imageLoads(url: string): Promise<boolean> {
   try {
-    const res = await fetch(url, { method: "HEAD", redirect: "follow" });
+    const resolved = url.startsWith("/") ? `${PRODUCTION_URL}${url}` : url;
+    const res = await fetch(resolved, { method: "HEAD", redirect: "follow" });
     return res.ok;
   } catch {
     return false;
@@ -428,12 +429,12 @@ async function main() {
   });
 
   const contentImages = ideas.slice(0, 5).map((i) => getContentIdeaImage(i.id, i.format));
-  const noTechStock = contentImages.every((u) => !u.includes("1617802690992"));
+  const noUnsplashStock = contentImages.every((u) => !u.includes("unsplash.com"));
   const contentImageResults = await Promise.all(contentImages.map(imageLoads));
   checks.push({
-    name: "Content images — luxury editorial (no VR/tech stock)",
-    pass: noTechStock,
-    detail: "No legacy tech-stock photo IDs",
+    name: "Content images — luxury editorial (curated local assets)",
+    pass: noUnsplashStock,
+    detail: "No Unsplash stock URLs",
   });
   checks.push({
     name: "Content images load (HTTP 200)",

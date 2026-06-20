@@ -1,8 +1,16 @@
 import Link from "next/link";
 import { FallbackImage } from "@/components/dashboard/FallbackImage";
 import type { PartnershipOpportunity } from "@/lib/dashboard/partnership-opportunities";
+import {
+  getPartnershipObjectPosition,
+} from "@/lib/dashboard/dashboard-images";
 import { OPPORTUNITY_IMAGE_FALLBACK } from "@/lib/dashboard/opportunity-images";
 import { ROUTES } from "@/lib/constants";
+
+function partnershipBusinessId(opp: PartnershipOpportunity): string {
+  if (opp.id.startsWith("curated-")) return opp.id.slice("curated-".length);
+  return opp.id;
+}
 
 type PartnershipOpportunitiesViewProps = {
   opportunities: PartnershipOpportunity[];
@@ -51,18 +59,20 @@ function OpportunityCard({
   showScores: boolean;
 }) {
   return (
-    <article className="flex flex-col overflow-hidden border border-black/10">
+    <article className="group flex flex-col overflow-hidden border border-black/10 bg-white transition-all duration-luxury ease-luxury hover:border-black/20 hover:shadow-[0_12px_40px_rgba(0,0,0,0.06)]">
       <FallbackImage
         src={opp.imageUrl}
         fallbackSrc={OPPORTUNITY_IMAGE_FALLBACK}
         alt={`${opp.businessName} — ${opp.category}`}
+        objectPosition={getPartnershipObjectPosition(opp.category, partnershipBusinessId(opp))}
+        sizes="(max-width: 768px) 100vw, (max-width: 1280px) 50vw, 640px"
       />
 
-      <div className="flex flex-1 flex-col p-6">
+      <div className="flex flex-1 flex-col p-6 sm:p-7">
         <div className="flex items-start justify-between gap-3">
           <div>
             <p className="luxury-label mb-1 text-gray-muted">{opp.category}</p>
-            <h3 className="font-serif text-xl font-normal tracking-tight text-black">
+            <h3 className="font-serif text-xl font-normal tracking-tight text-black sm:text-2xl">
               {opp.businessName}
             </h3>
             {opp.source === "discovered" && (
@@ -176,7 +186,7 @@ export function PartnershipOpportunitiesView({
 }: PartnershipOpportunitiesViewProps) {
   if (!groupByTier) {
     return (
-      <div className="grid gap-6 md:grid-cols-2">
+      <div className="grid gap-8 md:grid-cols-2">
         {opportunities.map((opp) => (
           <OpportunityCard key={opp.id} opp={opp} showScores={showScores} />
         ))}
@@ -198,7 +208,7 @@ export function PartnershipOpportunitiesView({
                 {tierOpps.length} opportunities
               </p>
             </div>
-            <div className="grid gap-6 md:grid-cols-2">
+            <div className="grid gap-8 md:grid-cols-2">
               {tierOpps.map((opp) => (
                 <OpportunityCard key={opp.id} opp={opp} showScores={showScores} />
               ))}

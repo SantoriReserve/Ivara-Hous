@@ -1,7 +1,8 @@
 import { fillContext } from "@/lib/dashboard/fill-context";
-import { editorialImageUrl } from "@/lib/dashboard/partnership-image-pool";
+import { getEditorialImageUrl } from "@/lib/dashboard/dashboard-images";
 import {
   fetchOsmHospitalityPlaces,
+  fetchWikidataImageUrl,
   geocodeLocation,
   type OsmPlace,
 } from "@/lib/dashboard/partnership-osm";
@@ -117,7 +118,10 @@ async function osmToOpportunity(
       ? `https://${place.website}`
       : `https://www.google.com/search?q=${encodeURIComponent(`${place.name} ${locationLabel}`)}`;
 
-  const imageUrl = editorialImageUrl(`osm-${place.osmId}-${place.category}`, 800, 520);
+  const imageUrl = place.wikidata
+    ? (await fetchWikidataImageUrl(place.wikidata)) ??
+      getEditorialImageUrl(`osm-${place.osmId}-${place.category}`)
+    : getEditorialImageUrl(`osm-${place.osmId}-${place.category}`);
 
   const instagram = `Instagram — search "${place.name}" in ${locationLabel}`;
   const contactWhere = place.email
