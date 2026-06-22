@@ -32,76 +32,109 @@ function isRecentRecoverySentAt(recoverySentAt: string | undefined): boolean {
   return !Number.isNaN(sentAt) && Date.now() - sentAt < 60 * 60 * 1000;
 }
 
+function redirectToLogin(request: NextRequest, pathname: string): NextResponse {
+  const loginUrl = request.nextUrl.clone();
+  loginUrl.pathname = ROUTES.login;
+  loginUrl.searchParams.set("next", pathname);
+  return NextResponse.redirect(loginUrl);
+}
+
 export async function middleware(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
 
-  if (hasAuthCallbackParams(request) && pathname !== ROUTES.authCallback) {
-    const callbackUrl = request.nextUrl.clone();
-    if (!callbackUrl.searchParams.has("next")) {
-      const isRecovery =
-        callbackUrl.searchParams.get("type") === "recovery" ||
-        pathname === ROUTES.loginResetPassword ||
-        pathname === ROUTES.home;
-      if (isRecovery) {
-        callbackUrl.searchParams.set("next", ROUTES.loginResetPassword);
+  try {
+    if (hasAuthCallbackParams(request) && pathname !== ROUTES.authCallback) {
+      const callbackUrl = request.nextUrl.clone();
+      if (!callbackUrl.searchParams.has("next")) {
+        const isRecovery =
+          callbackUrl.searchParams.get("type") === "recovery" ||
+          pathname === ROUTES.loginResetPassword ||
+          pathname === ROUTES.home;
+        if (isRecovery) {
+          callbackUrl.searchParams.set("next", ROUTES.loginResetPassword);
+        }
+      }
+      callbackUrl.pathname = ROUTES.authCallback;
+      return NextResponse.redirect(callbackUrl);
+    }
+
+    const { supabase, supabaseResponse } = await updateSupabaseSession(request);
+
+    if (pathname === ROUTES.home && supabase) {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+
+      if (isRecentRecoverySentAt(user?.recovery_sent_at)) {
+        const resetUrl = request.nextUrl.clone();
+        resetUrl.pathname = ROUTES.loginResetPassword;
+        resetUrl.search = "";
+        return NextResponse.redirect(resetUrl);
       }
     }
-    callbackUrl.pathname = ROUTES.authCallback;
-    return NextResponse.redirect(callbackUrl);
-  }
 
-  const { supabase, supabaseResponse } = await updateSupabaseSession(request);
+    const requiresDashboardAuth =
+      pathname === ROUTES.dashboard || pathname.startsWith(`${ROUTES.dashboard}/`);
+    const requiresAdminAuth = isAdminPath(pathname) && !isAdminPublicPath(pathname);
 
-  if (pathname === ROUTES.home) {
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    if (requiresDashboardAuth) {
+      if (!supabase) {
+        return redirectToLogin(request, pathname);
+      }
 
-    if (isRecentRecoverySentAt(user?.recovery_sent_at)) {
-      const resetUrl = request.nextUrl.clone();
-      resetUrl.pathname = ROUTES.loginResetPassword;
-      resetUrl.search = "";
-      return NextResponse.redirect(resetUrl);
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+
+      if (!user) {
+        return redirectToLogin(request, pathname);
+      }
     }
-  }
 
-  const requiresDashboardAuth =
-    pathname === ROUTES.dashboard || pathname.startsWith(`${ROUTES.dashboard}/`);
-  const requiresAdminAuth = isAdminPath(pathname) && !isAdminPublicPath(pathname);
+    if (requiresAdminAuth) {
+      const pinToken = request.cookies.get(ADMIN_PIN_COOKIE)?.value;
+      let hasPinAccess = false;
 
-  if (requiresDashboardAuth) {
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+      if (pinToken) {
+        try {
+          hasPinAccess = await verifyPinSessionToken(pinToken);
+        } catch (error) {
+          console.error("[middleware] Admin PIN verification failed:", error);
+        }
+      }
 
-    if (!user) {
-      const loginUrl = request.nextUrl.clone();
-      loginUrl.pathname = ROUTES.login;
-      loginUrl.searchParams.set("next", pathname);
-      return NextResponse.redirect(loginUrl);
+      if (!hasPinAccess && supabase) {
+        const {
+          data: { user },
+        } = await supabase.auth.getUser();
+
+        if (!user) {
+          const gateUrl = request.nextUrl.clone();
+          gateUrl.pathname = ROUTES.adminGate;
+          gateUrl.searchParams.set("next", `${pathname}${request.nextUrl.search}`);
+          return NextResponse.redirect(gateUrl);
+        }
+      } else if (!hasPinAccess) {
+        const gateUrl = request.nextUrl.clone();
+        gateUrl.pathname = ROUTES.adminGate;
+        gateUrl.searchParams.set("next", `${pathname}${request.nextUrl.search}`);
+        return NextResponse.redirect(gateUrl);
+      }
     }
+
+    return supabaseResponse;
+  } catch (error) {
+    console.error("[middleware] Unhandled error:", error);
+    return NextResponse.next();
   }
-
-  if (requiresAdminAuth) {
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    const pinToken = request.cookies.get(ADMIN_PIN_COOKIE)?.value;
-    const hasPinAccess = pinToken ? await verifyPinSessionToken(pinToken) : false;
-
-    if (!user && !hasPinAccess) {
-      const gateUrl = request.nextUrl.clone();
-      gateUrl.pathname = ROUTES.adminGate;
-      gateUrl.searchParams.set("next", `${pathname}${request.nextUrl.search}`);
-      return NextResponse.redirect(gateUrl);
-    }
-  }
-
-  return supabaseResponse;
 }
 
 export const config = {
   matcher: [
-    "/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
+    /*
+     * Run on pages only — skip static assets and API routes (checkout, webhooks, etc.)
+     * so Edge middleware cannot block Stripe or other server handlers.
+     */
+    "/((?!_next/static|_next/image|favicon.ico|api/|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
   ],
 };

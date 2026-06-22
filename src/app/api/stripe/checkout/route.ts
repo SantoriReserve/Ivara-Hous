@@ -1,5 +1,6 @@
 import { apiError, apiSuccess } from "@/lib/api-response";
-import { CREATOR_DEVELOPMENT_PLAN_PRODUCT, getCreatorDevelopmentPlanStripePriceId } from "@/lib/stripe-product";
+import { CREATOR_DEVELOPMENT_PLAN_PRODUCT } from "@/lib/stripe-product";
+import { getCreatorDevelopmentPlanStripePriceId } from "@/lib/stripe-product-server";
 import { getSiteUrl, getStripe } from "@/lib/stripe";
 import { ROUTES } from "@/lib/constants";
 

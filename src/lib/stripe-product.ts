@@ -7,8 +7,3 @@ export const CREATOR_DEVELOPMENT_PLAN_PRODUCT = {
 } as const;
 
 export const CREATOR_DEVELOPMENT_PLAN_PRICE_LABEL = "$150" as const;
-
-/** Stripe Price ID for CDS checkout — env override supported for deployment flexibility. */
-export function getCreatorDevelopmentPlanStripePriceId(): string {
-  return process.env.STRIPE_PRICE_ID ?? CREATOR_DEVELOPMENT_PLAN_PRODUCT.stripePriceId;
-}
