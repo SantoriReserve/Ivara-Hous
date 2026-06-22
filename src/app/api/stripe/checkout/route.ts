@@ -1,5 +1,5 @@
 import { apiError, apiSuccess } from "@/lib/api-response";
-import { CREATOR_DEVELOPMENT_PLAN_PRODUCT } from "@/lib/stripe-product";
+import { CREATOR_DEVELOPMENT_PLAN_PRODUCT, getCreatorDevelopmentPlanStripePriceId } from "@/lib/stripe-product";
 import { getSiteUrl, getStripe } from "@/lib/stripe";
 import { ROUTES } from "@/lib/constants";
 
@@ -31,20 +31,11 @@ export async function POST(request: Request) {
       metadata.assessmentId = assessmentId;
     }
 
+    const priceId = getCreatorDevelopmentPlanStripePriceId();
+
     const session = await stripe.checkout.sessions.create({
       mode: "payment",
-      line_items: [
-        {
-          price_data: {
-            currency: CREATOR_DEVELOPMENT_PLAN_PRODUCT.currency,
-            unit_amount: CREATOR_DEVELOPMENT_PLAN_PRODUCT.amountCents,
-            product_data: {
-              name: CREATOR_DEVELOPMENT_PLAN_PRODUCT.name,
-            },
-          },
-          quantity: 1,
-        },
-      ],
+      line_items: [{ price: priceId, quantity: 1 }],
       allow_promotion_codes: true,
       ...(customerEmail ? { customer_email: customerEmail } : {}),
       metadata,
