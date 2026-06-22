@@ -1,4 +1,4 @@
-import { createServerClient, type CookieOptions, type SupabaseClient } from "@supabase/ssr";
+import { createServerClient, type CookieOptions } from "@supabase/ssr";
 import { type NextRequest, NextResponse } from "next/server";
 
 type CookieToSet = {
@@ -6,6 +6,8 @@ type CookieToSet = {
   value: string;
   options: CookieOptions;
 };
+
+type MiddlewareSupabaseClient = ReturnType<typeof createServerClient>;
 
 function readSupabasePublicEnv(): { url: string; anonKey: string } | null {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim();
@@ -17,7 +19,7 @@ function readSupabasePublicEnv(): { url: string; anonKey: string } | null {
 }
 
 export async function updateSupabaseSession(request: NextRequest): Promise<{
-  supabase: SupabaseClient | null;
+  supabase: MiddlewareSupabaseClient | null;
   supabaseResponse: NextResponse;
 }> {
   let supabaseResponse = NextResponse.next({ request });
