@@ -6,6 +6,7 @@ import { CheckoutButton } from "@/components/checkout/CheckoutButton";
 import { Button } from "@/components/ui/Button";
 import { readCreatorDevAssessmentSession } from "@/lib/creator-dev-assessment-session";
 import { ROUTES } from "@/lib/constants";
+import { CREATOR_DEVELOPMENT_PLAN_PRICE_LABEL } from "@/lib/stripe-product";
 
 export function PlanPurchaseSection() {
   const searchParams = useSearchParams();
@@ -35,7 +36,9 @@ export function PlanPurchaseSection() {
           action system delivered to your account and inbox — built from your
           assessment and ready to execute from Day 1.
         </p>
-        <p className="mt-8 font-serif text-4xl font-normal tracking-tight">$95</p>
+        <p className="mt-8 font-serif text-4xl font-normal tracking-tight">
+          {CREATOR_DEVELOPMENT_PLAN_PRICE_LABEL}
+        </p>
         <div className="mt-10 flex justify-center">
           <CheckoutButton
             assessmentId={assessmentId}

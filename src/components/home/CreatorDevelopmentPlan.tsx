@@ -1,6 +1,7 @@
 import { Button } from "@/components/ui/Button";
 import { SectionHeading } from "@/components/ui/SectionHeading";
 import { ROUTES } from "@/lib/constants";
+import { CREATOR_DEVELOPMENT_PLAN_PRICE_LABEL } from "@/lib/stripe-product";
 
 const benefits = [
   "Personalized dashboard",
@@ -23,7 +24,9 @@ export function CreatorDevelopmentPlan() {
             description="A personalized creator growth system designed to help travel, lifestyle, hospitality, and luxury creators build a portfolio, secure partnerships, position themselves professionally, and prepare for paid opportunities."
             align="center"
           />
-          <p className="mt-8 font-serif text-5xl font-normal tracking-tight text-black">$95</p>
+          <p className="mt-8 font-serif text-5xl font-normal tracking-tight text-black">
+            {CREATOR_DEVELOPMENT_PLAN_PRICE_LABEL}
+          </p>
           <ul className="mx-auto mt-12 max-w-xl space-y-4 text-left">
             {benefits.map((item) => (
               <li

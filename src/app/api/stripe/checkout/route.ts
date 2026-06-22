@@ -10,11 +10,6 @@ type CheckoutRequestBody = {
 
 export async function POST(request: Request) {
   try {
-    const priceId = process.env.STRIPE_PRICE_ID;
-    if (!priceId) {
-      return apiError("Checkout is not configured.", 500);
-    }
-
     const body = (await request.json().catch(() => ({}))) as CheckoutRequestBody;
     const assessmentId =
       typeof body.assessmentId === "string" && body.assessmentId.length > 0
@@ -38,7 +33,18 @@ export async function POST(request: Request) {
 
     const session = await stripe.checkout.sessions.create({
       mode: "payment",
-      line_items: [{ price: priceId, quantity: 1 }],
+      line_items: [
+        {
+          price_data: {
+            currency: CREATOR_DEVELOPMENT_PLAN_PRODUCT.currency,
+            unit_amount: CREATOR_DEVELOPMENT_PLAN_PRODUCT.amountCents,
+            product_data: {
+              name: CREATOR_DEVELOPMENT_PLAN_PRODUCT.name,
+            },
+          },
+          quantity: 1,
+        },
+      ],
       allow_promotion_codes: true,
       ...(customerEmail ? { customer_email: customerEmail } : {}),
       metadata,

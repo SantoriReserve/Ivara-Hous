@@ -55,7 +55,7 @@ API routes in `src/app/api/` log submissions and return success responses. Wire 
 
 - **Notion** — store form submissions
 - **Email** — Resend / SendGrid notifications
-- **Stripe** — $95 Creator Development Plan checkout (button on assessment results)
+- **Stripe** — $150 Creator Development Plan checkout (button on assessment results)
 - **OpenAI** — real assessment scoring
 
 ## Build

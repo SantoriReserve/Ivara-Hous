@@ -3,6 +3,7 @@ import { PageHero } from "@/components/layout/PageHero";
 import { LuxuryImage } from "@/components/ui/LuxuryImage";
 import { Button } from "@/components/ui/Button";
 import { ROUTES } from "@/lib/constants";
+import { CREATOR_DEVELOPMENT_PLAN_PRICE_LABEL } from "@/lib/stripe-product";
 import { SERVICE_IMAGES } from "@/lib/images";
 import { SERVICES } from "@/lib/services";
 
@@ -39,7 +40,7 @@ export default function ServicesPage() {
                 assessment results.
               </p>
               <p className="mt-8 font-serif text-4xl font-normal tracking-tight text-black">
-                $95
+                {CREATOR_DEVELOPMENT_PLAN_PRICE_LABEL}
               </p>
               <ul className="mt-10 space-y-4">
                 {[

@@ -38,7 +38,7 @@ function buildRecentWins(
     wins.push(`15+ target messages should be out — follow-ups are where first partnerships happen`);
   }
   if (completedTasks >= 25) {
-    wins.push(`Strong momentum toward "${ctx.primaryGoal}" — this is what $95 systems are built for`);
+    wins.push(`Strong momentum toward "${ctx.primaryGoal}" — this is what $150 systems are built for`);
   }
 
   if (wins.length === 0) {

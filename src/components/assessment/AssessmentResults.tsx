@@ -2,6 +2,7 @@
 
 import { Button } from "@/components/ui/Button";
 import { ROUTES } from "@/lib/constants";
+import { CREATOR_DEVELOPMENT_PLAN_PRICE_LABEL } from "@/lib/stripe-product";
 import {
   SCORE_LABELS,
   type AssessmentAnswers,
@@ -165,7 +166,9 @@ export function AssessmentResults({
           dashboard, daily actions, outreach templates, and instant access after
           purchase.
         </p>
-        <p className="mt-8 font-serif text-4xl font-normal tracking-tight">$95</p>
+        <p className="mt-8 font-serif text-4xl font-normal tracking-tight">
+          {CREATOR_DEVELOPMENT_PLAN_PRICE_LABEL}
+        </p>
         <ul className="mx-auto mt-10 max-w-md space-y-3 text-left">
           {PLAN_BENEFITS.map((item) => (
             <li
@@ -187,7 +190,7 @@ export function AssessmentResults({
             size="lg"
             className="w-full border-white text-white hover:bg-white hover:text-black sm:w-auto"
           >
-            Learn More — $95
+            Learn More — {CREATOR_DEVELOPMENT_PLAN_PRICE_LABEL}
           </Button>
         </div>
         <p className="mt-8 font-sans text-[10px] uppercase tracking-nav text-white/40">
