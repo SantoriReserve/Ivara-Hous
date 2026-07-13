@@ -77,26 +77,31 @@ export async function createCustomerNote(params: {
     return null;
   }
 
-  const supabase = getSupabaseAdmin();
-  const { data, error } = await supabase
-    .from("admin_customer_notes")
-    .insert({
-      customer_key: params.customerKey,
-      user_id: params.userId ?? null,
-      purchase_id: params.purchaseId ?? null,
-      body,
-      created_by: params.createdBy ?? "admin",
-      updated_at: new Date().toISOString(),
-    })
-    .select("*")
-    .single();
+  try {
+    const supabase = getSupabaseAdmin();
+    const { data, error } = await supabase
+      .from("admin_customer_notes")
+      .insert({
+        customer_key: params.customerKey,
+        user_id: params.userId ?? null,
+        purchase_id: params.purchaseId ?? null,
+        body,
+        created_by: params.createdBy ?? "admin",
+        updated_at: new Date().toISOString(),
+      })
+      .select("*")
+      .single();
 
-  if (error) {
-    console.error("[admin] createCustomerNote failed:", error.message);
+    if (error) {
+      console.error("[admin] createCustomerNote failed:", error.message);
+      return null;
+    }
+
+    return mapNote(data as Record<string, unknown>);
+  } catch (error) {
+    console.error("[admin] createCustomerNote exception:", error);
     return null;
   }
-
-  return mapNote(data as Record<string, unknown>);
 }
 
 export async function deleteCustomerNote(noteId: string): Promise<boolean> {
@@ -132,18 +137,23 @@ export async function listCustomerTags(customerKey: string): Promise<AdminCustom
 
 export async function listAllCustomerTags(): Promise<AdminCustomerTag[]> {
   const supabase = getSupabaseAdmin();
-  const { data, error } = await supabase
-    .from("admin_customer_tags")
-    .select("*")
-    .order("created_at", { ascending: false })
-    .limit(5000);
+  try {
+    const { data, error } = await supabase
+      .from("admin_customer_tags")
+      .select("*")
+      .order("created_at", { ascending: false })
+      .limit(5000);
 
-  if (error) {
-    console.error("[admin] listAllCustomerTags failed:", error.message);
+    if (error) {
+      console.error("[admin] listAllCustomerTags failed:", error.message);
+      return [];
+    }
+
+    return (data ?? []).map((row) => mapTag(row as Record<string, unknown>));
+  } catch (error) {
+    console.error("[admin] listAllCustomerTags exception:", error);
     return [];
   }
-
-  return (data ?? []).map((row) => mapTag(row as Record<string, unknown>));
 }
 
 export async function addCustomerTag(params: {
@@ -157,27 +167,32 @@ export async function addCustomerTag(params: {
     return null;
   }
 
-  const supabase = getSupabaseAdmin();
-  const { data, error } = await supabase
-    .from("admin_customer_tags")
-    .upsert(
-      {
-        customer_key: params.customerKey,
-        user_id: params.userId ?? null,
-        purchase_id: params.purchaseId ?? null,
-        tag,
-      },
-      { onConflict: "customer_key,tag" }
-    )
-    .select("*")
-    .single();
+  try {
+    const supabase = getSupabaseAdmin();
+    const { data, error } = await supabase
+      .from("admin_customer_tags")
+      .upsert(
+        {
+          customer_key: params.customerKey,
+          user_id: params.userId ?? null,
+          purchase_id: params.purchaseId ?? null,
+          tag,
+        },
+        { onConflict: "customer_key,tag" }
+      )
+      .select("*")
+      .single();
 
-  if (error) {
-    console.error("[admin] addCustomerTag failed:", error.message);
+    if (error) {
+      console.error("[admin] addCustomerTag failed:", error.message);
+      return null;
+    }
+
+    return mapTag(data as Record<string, unknown>);
+  } catch (error) {
+    console.error("[admin] addCustomerTag exception:", error);
     return null;
   }
-
-  return mapTag(data as Record<string, unknown>);
 }
 
 export async function removeCustomerTag(tagId: string): Promise<boolean> {

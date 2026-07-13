@@ -574,6 +574,18 @@ export async function getAdminCustomerDetail(
   customerKey: string,
   options?: AdminQueryOptions
 ): Promise<AdminCustomerDetail | null> {
+  try {
+    return await getAdminCustomerDetailUnsafe(customerKey, options);
+  } catch (error) {
+    console.error("[admin] getAdminCustomerDetail failed:", customerKey, error);
+    return null;
+  }
+}
+
+async function getAdminCustomerDetailUnsafe(
+  customerKey: string,
+  options?: AdminQueryOptions
+): Promise<AdminCustomerDetail | null> {
   const { userId, purchaseId } = parseCustomerKey(customerKey);
   const scope = toScope(options);
   const supabase = getSupabaseAdmin();
@@ -811,7 +823,7 @@ export async function getAdminCustomerDetail(
     customerKey: resolvedCustomerKey,
     name:
       profile?.fullName ||
-      assessment?.answers.fullName ||
+      assessment?.answers?.fullName ||
       purchase.customer_email.split("@")[0] ||
       "Customer",
     email: purchase.customer_email,
@@ -986,6 +998,17 @@ export async function getAdminConversionMetrics(
 }
 
 export async function getAdminNotifications(
+  options?: AdminQueryOptions
+): Promise<AdminNotificationItem[]> {
+  try {
+    return await getAdminNotificationsUnsafe(options);
+  } catch (error) {
+    console.error("[admin] getAdminNotifications failed:", error);
+    return [];
+  }
+}
+
+async function getAdminNotificationsUnsafe(
   options?: AdminQueryOptions
 ): Promise<AdminNotificationItem[]> {
   const scope = toScope(options);

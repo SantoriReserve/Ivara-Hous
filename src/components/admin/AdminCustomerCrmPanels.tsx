@@ -1,5 +1,6 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import {
   adminAddCustomerNoteAction,
@@ -17,6 +18,7 @@ export function AdminCustomerNotesPanel({
   customerKey: string;
   notes: Array<{ id: string; body: string; createdBy: string; createdAt: string }>;
 }) {
+  const router = useRouter();
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
@@ -29,7 +31,8 @@ export function AdminCustomerNotesPanel({
         className="space-y-3"
         onSubmit={(event) => {
           event.preventDefault();
-          const formData = new FormData(event.currentTarget);
+          const form = event.currentTarget;
+          const formData = new FormData(form);
           formData.set("customerKey", customerKey);
           setError(null);
           startTransition(async () => {
@@ -38,7 +41,8 @@ export function AdminCustomerNotesPanel({
               setError(result.error);
               return;
             }
-            event.currentTarget.reset();
+            form.reset();
+            router.refresh();
           });
         }}
       >
@@ -77,7 +81,12 @@ export function AdminCustomerNotesPanel({
                     formData.set("noteId", note.id);
                     formData.set("customerKey", customerKey);
                     startTransition(async () => {
-                      await adminDeleteCustomerNoteAction(formData);
+                      const result = await adminDeleteCustomerNoteAction(formData);
+                      if (!result.success) {
+                        setError(result.error);
+                        return;
+                      }
+                      router.refresh();
                     });
                   }}
                 >
@@ -101,6 +110,7 @@ export function AdminCustomerTagsPanel({
   customerKey: string;
   tags: string[];
 }) {
+  const router = useRouter();
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
@@ -119,7 +129,12 @@ export function AdminCustomerTagsPanel({
                 formData.set("customerKey", customerKey);
                 formData.set("tag", tag);
                 startTransition(async () => {
-                  await adminRemoveCustomerTagAction(formData);
+                  const result = await adminRemoveCustomerTagAction(formData);
+                  if (!result.success) {
+                    setError(result.error);
+                    return;
+                  }
+                  router.refresh();
                 });
               }}
               className="border border-black bg-black px-3 py-1.5 font-sans text-xs uppercase tracking-nav text-white"
@@ -137,7 +152,8 @@ export function AdminCustomerTagsPanel({
         className="flex flex-wrap gap-2"
         onSubmit={(event) => {
           event.preventDefault();
-          const formData = new FormData(event.currentTarget);
+          const form = event.currentTarget;
+          const formData = new FormData(form);
           formData.set("customerKey", customerKey);
           setError(null);
           startTransition(async () => {
@@ -146,7 +162,8 @@ export function AdminCustomerTagsPanel({
               setError(result.error);
               return;
             }
-            event.currentTarget.reset();
+            form.reset();
+            router.refresh();
           });
         }}
       >
@@ -182,7 +199,12 @@ export function AdminCustomerTagsPanel({
               formData.set("customerKey", customerKey);
               formData.set("tag", tag);
               startTransition(async () => {
-                await adminAddCustomerTagAction(formData);
+                const result = await adminAddCustomerTagAction(formData);
+                if (!result.success) {
+                  setError(result.error);
+                  return;
+                }
+                router.refresh();
               });
             }}
             className="border border-black/15 px-3 py-1.5 font-sans text-xs uppercase tracking-nav text-gray-mid hover:border-black hover:text-black"

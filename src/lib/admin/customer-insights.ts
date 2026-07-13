@@ -17,6 +17,16 @@ export function labelEmailType(emailType: string): string {
   return EMAIL_TYPE_LABELS[emailType] ?? emailType.replace(/_/g, " ");
 }
 
+const EMPTY_INSIGHTS = {
+  overallScore: null as number | null,
+  topStrengths: [] as string[],
+  improvementAreas: [] as string[],
+  recommendedFocus: [] as string[],
+  recommendedResources: [] as string[],
+  currentStage: null as string | null,
+  nextAction: null as string | null,
+};
+
 export function buildAssessmentInsights(assessment: AssessmentRecord | null): {
   overallScore: number | null;
   topStrengths: string[];
@@ -26,58 +36,62 @@ export function buildAssessmentInsights(assessment: AssessmentRecord | null): {
   currentStage: string | null;
   nextAction: string | null;
 } {
-  if (!assessment) {
-    return {
-      overallScore: null,
-      topStrengths: [],
-      improvementAreas: [],
-      recommendedFocus: [],
-      recommendedResources: [],
-      currentStage: null,
-      nextAction: null,
-    };
+  if (!assessment?.analysis) {
+    return { ...EMPTY_INSIGHTS };
   }
 
-  const scores = assessment.analysis.scores;
-  const entries = Object.entries(scores) as Array<[keyof typeof scores, number]>;
-  const overallScore = Math.round(
-    entries.reduce((sum, [, value]) => sum + value, 0) / entries.length
-  );
-  const sorted = [...entries].sort((a, b) => b[1] - a[1]);
-  const topStrengths =
-    assessment.analysis.preview.topStrengths?.length
-      ? assessment.analysis.preview.topStrengths
-      : sorted.slice(0, 3).map(([key, value]) => `${key} (${value})`);
-  const improvementAreas =
-    assessment.analysis.preview.growthOpportunities?.length
-      ? assessment.analysis.preview.growthOpportunities
-      : sorted
-          .slice(-3)
-          .reverse()
-          .map(([key, value]) => `${key} (${value})`);
+  try {
+    const analysis = assessment.analysis;
+    const scores = analysis.scores ?? null;
+    const preview = analysis.preview ?? null;
+    const developmentFoundation = analysis.developmentFoundation ?? null;
+    const foundation = analysis.foundation ?? null;
 
-  const recommendedFocus =
-    assessment.analysis.preview.priorityFocusAreas?.length
-      ? assessment.analysis.preview.priorityFocusAreas
-      : assessment.analysis.developmentFoundation.priorityFocusAreas ?? [];
+    const entries = scores
+      ? (Object.entries(scores) as Array<[string, number]>).filter(
+          ([, value]) => typeof value === "number"
+        )
+      : [];
+    const overallScore = entries.length
+      ? Math.round(entries.reduce((sum, [, value]) => sum + value, 0) / entries.length)
+      : null;
+    const sorted = [...entries].sort((a, b) => b[1] - a[1]);
+    const topStrengths =
+      preview?.topStrengths?.length
+        ? preview.topStrengths
+        : sorted.slice(0, 3).map(([key, value]) => `${key} (${value})`);
+    const improvementAreas =
+      preview?.growthOpportunities?.length
+        ? preview.growthOpportunities
+        : sorted
+            .slice(-3)
+            .reverse()
+            .map(([key, value]) => `${key} (${value})`);
 
-  const recommendedResources = [
-    ...(assessment.analysis.foundation.contentPillars?.slice(0, 2) ?? []),
-    assessment.analysis.developmentFoundation.portfolioDevelopmentPriority,
-  ].filter(Boolean);
+    const recommendedFocus =
+      preview?.priorityFocusAreas?.length
+        ? preview.priorityFocusAreas
+        : developmentFoundation?.priorityFocusAreas ?? [];
 
-  return {
-    overallScore,
-    topStrengths,
-    improvementAreas,
-    recommendedFocus,
-    recommendedResources,
-    currentStage:
-      assessment.analysis.preview.currentCreatorStage ||
-      assessment.analysis.developmentFoundation.creatorStage ||
-      null,
-    nextAction: assessment.analysis.preview.recommendedNextStep || null,
-  };
+    const recommendedResources = [
+      ...(foundation?.contentPillars?.slice(0, 2) ?? []),
+      developmentFoundation?.portfolioDevelopmentPriority,
+    ].filter((value): value is string => Boolean(value));
+
+    return {
+      overallScore,
+      topStrengths,
+      improvementAreas,
+      recommendedFocus,
+      recommendedResources,
+      currentStage:
+        preview?.currentCreatorStage || developmentFoundation?.creatorStage || null,
+      nextAction: preview?.recommendedNextStep || null,
+    };
+  } catch (error) {
+    console.error("[admin] buildAssessmentInsights failed:", error);
+    return { ...EMPTY_INSIGHTS };
+  }
 }
 
 export function resolveNextRecommendedAction(params: {
@@ -127,7 +141,7 @@ export function enrichCustomerJourney(params: {
       id: `assessment-completed-${params.assessment.assessmentId}`,
       occurredAt: params.assessment.submittedAt,
       label: "Assessment Completed",
-      detail: params.assessment.analysis.preview.creatorArchetype,
+      detail: params.assessment.analysis?.preview?.creatorArchetype,
     });
   }
 
