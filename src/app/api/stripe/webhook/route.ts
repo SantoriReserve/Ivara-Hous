@@ -1,4 +1,5 @@
 import { provisionPurchaseAccess } from "@/lib/auth/provision-purchase-access";
+import { logAuthEvent } from "@/lib/auth/auth-events";
 import { notifyOwnerPurchase } from "@/lib/email/owner-notifications";
 import { saveCompletedPurchaseFromCheckoutSession } from "@/lib/purchase-repository";
 import { getStripe } from "@/lib/stripe";
@@ -44,28 +45,18 @@ export async function POST(request: Request) {
       return new Response("Session ignored", { status: 200 });
     }
 
-    console.log("[stripe/webhook] Purchase saved:", {
-      purchaseId: purchase.id,
-      stripeCheckoutSessionId: purchase.stripeCheckoutSessionId,
-      assessmentId: purchase.assessmentId,
-      customerEmail: purchase.customerEmail,
-      amountCents: purchase.amountCents,
-    });
-
     try {
-      const provision = await provisionPurchaseAccess(purchase);
-      console.log("[stripe/webhook] Purchase access provisioned:", {
-        purchaseId: purchase.id,
-        customerEmail: purchase.customerEmail,
-        userId: provision.userId,
-        createdUser: provision.createdUser,
-        claimed: provision.claimed,
-        emailSent: provision.emailSent,
-        reason: provision.reason ?? null,
+      const provision = await provisionPurchaseAccess(purchase, {
+        webhookIdempotent: true,
       });
 
-      if (!provision.claimed || !provision.emailSent) {
-        console.error("[stripe/webhook] Account provisioning incomplete:", provision);
+      if (!provision.claimed) {
+        logAuthEvent("purchase.link_failed", {
+          purchaseId: purchase.id,
+          customerEmail: purchase.customerEmail,
+          stripeEventId: event.id,
+          reason: provision.reason ?? "claim_failed",
+        });
       }
     } catch (provisionError) {
       console.error("[stripe/webhook] Account provisioning failed:", provisionError);

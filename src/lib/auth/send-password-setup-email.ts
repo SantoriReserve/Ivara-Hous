@@ -1,3 +1,5 @@
+import { wasAccessEmailSentRecently } from "@/lib/auth/access-email-guards";
+import { logAuthEvent } from "@/lib/auth/auth-events";
 import { normalizeEmail } from "@/lib/auth/normalize-email";
 import { ROUTES } from "@/lib/constants";
 import { sendBrandedEmail } from "@/lib/email/send-email";
@@ -19,8 +21,23 @@ export async function sendPasswordSetupEmail(params: {
   userId?: string;
   purchaseId?: string;
   purpose?: "setup" | "reset";
+  /** Bypass the short resend cooldown (use only for first webhook send). */
+  ignoreRateLimit?: boolean;
 }): Promise<PasswordSetupEmailResult> {
   const email = normalizeEmail(params.email);
+  const purpose = params.purpose ?? "setup";
+
+  if (!params.ignoreRateLimit && (await wasAccessEmailSentRecently(email, 60_000))) {
+    logAuthEvent("password_setup.email_skipped", {
+      email,
+      purchaseId: params.purchaseId ?? null,
+      userId: params.userId ?? null,
+      purpose,
+      reason: "rate_limited",
+    });
+    return { sent: false, reason: "rate_limited" };
+  }
+
   const siteUrl = getSiteUrl().replace(/\/$/, "");
   const redirectTo = `${siteUrl}${ROUTES.authCallback}?next=${encodeURIComponent(ROUTES.loginResetPassword)}`;
 
@@ -33,12 +50,17 @@ export async function sendPasswordSetupEmail(params: {
 
   if (linkError || !linkData.properties?.action_link) {
     const reason = linkError?.message ?? "Could not generate password setup link";
-    console.error("[auth] generateLink failed:", { email, reason });
+    logAuthEvent("password_setup.email_failed", {
+      email,
+      purchaseId: params.purchaseId ?? null,
+      userId: params.userId ?? null,
+      purpose,
+      reason,
+    });
     return { sent: false, reason };
   }
 
   const actionLink = linkData.properties.action_link;
-  const purpose = params.purpose ?? "setup";
   const { subject, html } = renderAccountAccessEmail({
     fullName: params.fullName ?? "Creator",
     actionUrl: actionLink,
@@ -56,14 +78,17 @@ export async function sendPasswordSetupEmail(params: {
   });
 
   if (!emailResult.sent) {
-    console.error("[auth] Password setup email failed:", {
+    logAuthEvent("password_setup.email_failed", {
       email,
+      purchaseId: params.purchaseId ?? null,
+      userId: params.userId ?? null,
+      purpose,
       reason: emailResult.reason,
     });
     return { sent: false, reason: emailResult.reason };
   }
 
-  console.log("[auth] Password setup email sent:", {
+  logAuthEvent("password_setup.email_sent", {
     email,
     purpose,
     purchaseId: params.purchaseId ?? null,

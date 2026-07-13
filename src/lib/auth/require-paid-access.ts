@@ -1,6 +1,11 @@
 import { CREATOR_DEVELOPMENT_PLAN_PRODUCT } from "@/lib/stripe-product";
 import { getSupabaseAdmin } from "@/lib/supabase/admin";
 
+/**
+ * Paid dashboard entitlement is scoped strictly by auth user id.
+ * Purchases are never loaded by email here — only by `user_id` — so one
+ * customer cannot inherit another customer's access.
+ */
 export async function userHasPaidDashboardAccess(userId: string): Promise<boolean> {
   const supabase = getSupabaseAdmin();
   const { data, error } = await supabase

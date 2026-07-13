@@ -1,4 +1,5 @@
 import type Stripe from "stripe";
+import { logAuthEvent } from "@/lib/auth/auth-events";
 import { normalizeEmail } from "@/lib/auth/normalize-email";
 import {
   getCheckoutSessionCustomerId,
@@ -55,6 +56,10 @@ function buildPurchaseInsert(session: Stripe.Checkout.Session): PurchaseInsert |
   };
 }
 
+/**
+ * Idempotent purchase save keyed by Stripe checkout session id.
+ * Retries never create a second row or clear an existing user_id claim.
+ */
 export async function saveCompletedPurchaseFromCheckoutSession(
   session: Stripe.Checkout.Session
 ): Promise<PurchaseRecord | null> {
@@ -67,16 +72,42 @@ export async function saveCompletedPurchaseFromCheckoutSession(
   const assessmentId = await resolveAssessmentId(metadataAssessmentId);
   purchaseInsert.assessmentId = assessmentId;
 
+  const existing = await getPurchaseByCheckoutSessionId(session.id);
+  if (existing) {
+    if (assessmentId) {
+      await updateAssessmentPaymentStatus(assessmentId, "paid");
+    }
+    logAuthEvent("purchase.duplicate_ignored", {
+      purchaseId: existing.id,
+      stripeCheckoutSessionId: session.id,
+      customerEmail: existing.customerEmail,
+      userId: existing.userId,
+    });
+    return existing;
+  }
+
   const supabase = getSupabaseAdmin();
   const { data, error } = await supabase
     .from("purchases")
-    .upsert(toPurchaseInsertRow(purchaseInsert), {
-      onConflict: "stripe_checkout_session_id",
-    })
+    .insert(toPurchaseInsertRow(purchaseInsert))
     .select("*")
     .single();
 
   if (error) {
+    // Race: another webhook retry inserted first.
+    if (error.code === "23505") {
+      const raced = await getPurchaseByCheckoutSessionId(session.id);
+      if (raced) {
+        logAuthEvent("purchase.duplicate_ignored", {
+          purchaseId: raced.id,
+          stripeCheckoutSessionId: session.id,
+          customerEmail: raced.customerEmail,
+          userId: raced.userId,
+          race: true,
+        });
+        return raced;
+      }
+    }
     throw new Error(`Failed to save purchase: ${error.message}`);
   }
 
@@ -84,7 +115,16 @@ export async function saveCompletedPurchaseFromCheckoutSession(
     await updateAssessmentPaymentStatus(assessmentId, "paid");
   }
 
-  return mapPurchaseRow(data);
+  const purchase = mapPurchaseRow(data);
+  logAuthEvent("purchase.received", {
+    purchaseId: purchase.id,
+    stripeCheckoutSessionId: purchase.stripeCheckoutSessionId,
+    customerEmail: purchase.customerEmail,
+    amountCents: purchase.amountCents,
+    assessmentId: purchase.assessmentId,
+  });
+
+  return purchase;
 }
 
 export async function getPurchaseByCheckoutSessionId(

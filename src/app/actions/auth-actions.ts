@@ -5,6 +5,8 @@ import {
   claimPurchaseByCheckoutSessionId,
   claimUnclaimedPurchasesForEmail,
 } from "@/lib/auth/claim-purchase";
+import { wasAccessEmailSentRecently } from "@/lib/auth/access-email-guards";
+import { logAuthEvent } from "@/lib/auth/auth-events";
 import { findAuthUserByEmail } from "@/lib/auth/find-auth-user-by-email";
 import { normalizeEmail } from "@/lib/auth/normalize-email";
 import { provisionPurchaseAccess } from "@/lib/auth/provision-purchase-access";
@@ -25,8 +27,11 @@ import { getStripe } from "@/lib/stripe";
 
 const MIN_PASSWORD_LENGTH = 8;
 
+const FRIENDLY_GENERIC_ERROR =
+  "Something went wrong. Please try again in a moment, or contact support if it continues.";
+
 export type AuthActionResult =
-  | { success: true }
+  | { success: true; message?: string }
   | { success: false; error: string };
 
 function validatePassword(password: string): string | null {
@@ -34,6 +39,10 @@ function validatePassword(password: string): string | null {
     return `Password must be at least ${MIN_PASSWORD_LENGTH} characters.`;
   }
   return null;
+}
+
+function friendlyClientError(_error: unknown, fallback = FRIENDLY_GENERIC_ERROR): string {
+  return fallback;
 }
 
 async function waitForPurchase(stripeCheckoutSessionId: string, attempts = 10) {
@@ -115,7 +124,9 @@ export async function registerAndClaimAction(formData: FormData): Promise<AuthAc
         success: false,
         error: setup.sent
           ? "Your purchase is already linked to an account. Check your email for a link to set or reset your password, then sign in."
-          : "Your purchase is already linked to an account. Use Forgot Password on the sign-in page, then sign in.",
+          : setup.reason === "rate_limited"
+            ? "We recently sent an access email to this address. Check your inbox and spam folder, then try again in a minute."
+            : "Your purchase is already linked to an account. Use Forgot Password on the sign-in page, then sign in.",
       };
     }
 
@@ -160,7 +171,11 @@ export async function registerAndClaimAction(formData: FormData): Promise<AuthAc
 
     if (createError || !created.user) {
       const message = createError?.message ?? "Could not create account.";
-      console.error("[auth] registerAndClaim createUser failed:", { email, message });
+      logAuthEvent("login.failure", {
+        email,
+        reason: "register_create_failed",
+        detail: message,
+      });
       const normalized = message.toLowerCase();
       if (
         normalized.includes("already") ||
@@ -173,7 +188,10 @@ export async function registerAndClaimAction(formData: FormData): Promise<AuthAc
             "An account with this email already exists. Sign in with your password, or use Forgot Password.",
         };
       }
-      return { success: false, error: message };
+      return {
+        success: false,
+        error: "We could not create your account right now. Please try again in a moment.",
+      };
     }
 
     const userId = created.user.id;
@@ -181,10 +199,10 @@ export async function registerAndClaimAction(formData: FormData): Promise<AuthAc
     const claimResult = await claimPurchaseByCheckoutSessionId(userId, email, sessionId);
     if (!claimResult.claimed) {
       await admin.auth.admin.deleteUser(userId);
-      console.error("[auth] registerAndClaim claim failed; rolled back user:", {
+      logAuthEvent("purchase.link_failed", {
         email,
         sessionId,
-        reason: claimResult.reason,
+        reason: claimResult.reason ?? "claim_failed",
       });
       return {
         success: false,
@@ -203,20 +221,27 @@ export async function registerAndClaimAction(formData: FormData): Promise<AuthAc
     });
 
     if (signInError) {
-      console.error("[auth] registerAndClaim sign-in failed after create:", {
+      logAuthEvent("login.failure", {
         email,
-        message: signInError.message,
+        userId,
+        reason: "register_signin_failed",
       });
       return {
         success: false,
         error: "Account created but sign-in failed. Try signing in manually.",
       };
     }
+
+    logAuthEvent("login.success", {
+      email,
+      userId,
+      source: "register_and_claim",
+    });
   } catch (error) {
     console.error("[auth] registerAndClaim error:", error);
     return {
       success: false,
-      error: error instanceof Error ? error.message : "Registration failed.",
+      error: friendlyClientError(error),
     };
   }
 
@@ -237,7 +262,7 @@ export async function signInAction(formData: FormData): Promise<AuthActionResult
     const { data, error } = await supabase.auth.signInWithPassword({ email, password });
 
     if (error || !data.user) {
-      console.error("[auth] signIn failed:", {
+      logAuthEvent("login.failure", {
         email,
         code: error?.code ?? null,
         status: error?.status ?? null,
@@ -250,44 +275,54 @@ export async function signInAction(formData: FormData): Promise<AuthActionResult
       ]);
 
       if (!authUser && purchases.length > 0) {
-        const provision = await provisionPurchaseAccess(purchases[0]);
-        console.log("[auth] signIn recovered missing account via purchase:", {
-          email,
-          purchaseId: purchases[0].id,
-          provision,
+        const provision = await provisionPurchaseAccess(purchases[0], {
+          forceEmail: true,
         });
         return {
           success: false,
           error: provision.emailSent
-            ? "Your purchase is confirmed, but you still need to set a password. Check your email for the access link, then sign in."
-            : "Your purchase is confirmed, but your password is not set yet. Use Forgot Password with this email to receive an access link.",
+            ? "That password isn't set yet. We just emailed you a secure link to create one — then you can sign in."
+            : provision.reason === "rate_limited" || provision.emailSkipped
+              ? "That password isn't set yet. Check your inbox for the access email, or use Forgot Password to resend it."
+              : "That password isn't set yet. Use Forgot Password with this email to receive an access link.",
         };
       }
 
-      if (authUser && purchases.length > 0) {
+      if (authUser) {
         return {
           success: false,
           error:
-            "Incorrect password. Use Forgot Password with this email to set a new password, then sign in.",
+            "That password doesn't match. Double-check it, or use Forgot Password to set a new one.",
         };
       }
 
-      return { success: false, error: "Invalid email or password." };
+      return {
+        success: false,
+        error:
+          "We couldn't sign you in with those details. Check your email and password, or use Forgot Password.",
+      };
     }
 
     const claimedCount = await claimUnclaimedPurchasesForEmail(data.user.id, email);
     if (claimedCount > 0) {
-      console.log("[auth] Linked unclaimed purchases on sign-in:", {
+      logAuthEvent("purchase.linked", {
         email,
         userId: data.user.id,
         claimedCount,
+        source: "signin",
       });
     }
+
+    logAuthEvent("login.success", {
+      email,
+      userId: data.user.id,
+      source: "password",
+    });
   } catch (error) {
     console.error("[auth] signIn unexpected error:", error);
     return {
       success: false,
-      error: error instanceof Error ? error.message : "Sign-in failed.",
+      error: friendlyClientError(error),
     };
   }
 
@@ -304,23 +339,35 @@ export async function requestPasswordResetAction(
     return { success: false, error: "Email is required." };
   }
 
+  logAuthEvent("password_reset.requested", { email });
+
   try {
+    if (await wasAccessEmailSentRecently(email, 60_000)) {
+      // Still success UX — avoid leaking account existence and avoid spam.
+      return {
+        success: true,
+        message:
+          "If an account exists, an access email was recently sent. Check your inbox and spam folder.",
+      };
+    }
+
     let authUser = await findAuthUserByEmail(email);
     const purchases = await getCompletedPurchasesByEmail(email);
 
     if (!authUser && purchases.length > 0) {
-      console.log("[auth] Password reset provisioning missing Auth user from purchase:", {
-        email,
-        purchaseId: purchases[0].id,
+      const provision = await provisionPurchaseAccess(purchases[0], {
+        forceEmail: true,
       });
-      const provision = await provisionPurchaseAccess(purchases[0], { sendEmail: true });
-      if (provision.emailSent) {
+      if (provision.emailSent || provision.reason === "rate_limited") {
         return { success: true };
       }
       if (provision.userId) {
         authUser = await findAuthUserByEmail(email);
       } else {
-        console.error("[auth] Password reset provisioning failed:", provision);
+        logAuthEvent("password_reset.failed", {
+          email,
+          reason: provision.reason ?? "provision_failed",
+        });
         return {
           success: false,
           error:
@@ -330,7 +377,6 @@ export async function requestPasswordResetAction(
     }
 
     if (!authUser) {
-      console.warn("[auth] Password reset requested for unknown email:", email);
       // Do not reveal whether the email exists.
       return { success: true };
     }
@@ -339,24 +385,27 @@ export async function requestPasswordResetAction(
       email,
       userId: authUser.id,
       purchaseId: purchases[0]?.id,
-      purpose: "reset",
+      purpose: purchases.length > 0 && !purchases[0]?.userId ? "setup" : "reset",
     });
 
-    if (!emailResult.sent) {
-      console.error("[auth] Password reset email failed:", {
+    if (!emailResult.sent && emailResult.reason !== "rate_limited") {
+      logAuthEvent("password_reset.failed", {
         email,
         reason: emailResult.reason,
       });
       return {
         success: false,
-        error: "We could not send a reset email. Please try again in a few minutes.",
+        error: "We could not send an access email. Please try again in a few minutes.",
       };
     }
   } catch (error) {
     console.error("[auth] Password reset unexpected error:", error);
     return {
       success: false,
-      error: error instanceof Error ? error.message : "Password reset request failed.",
+      error: friendlyClientError(
+        error,
+        "We could not send an access email. Please try again in a few minutes."
+      ),
     };
   }
 
@@ -396,10 +445,10 @@ export async function updatePasswordAction(formData: FormData): Promise<AuthActi
     const { error } = await supabase.auth.updateUser({ password });
 
     if (error) {
-      console.error("[auth] Password update failed:", {
+      logAuthEvent("password_reset.failed", {
         userId: user.id,
-        email: user.email,
-        message: error.message,
+        email: user.email ?? null,
+        reason: error.message,
       });
       return {
         success: false,
@@ -410,20 +459,29 @@ export async function updatePasswordAction(formData: FormData): Promise<AuthActi
     if (user.email) {
       const claimedCount = await claimUnclaimedPurchasesForEmail(user.id, user.email);
       if (claimedCount > 0) {
-        console.log("[auth] Linked purchases after password update:", {
+        logAuthEvent("purchase.linked", {
           userId: user.id,
           email: user.email,
           claimedCount,
+          source: "password_update",
         });
       }
     }
+
+    logAuthEvent("password_reset.completed", {
+      userId: user.id,
+      email: user.email ?? null,
+    });
 
     await supabase.auth.signOut();
   } catch (error) {
     console.error("[auth] Password update unexpected error:", error);
     return {
       success: false,
-      error: error instanceof Error ? error.message : "Password update failed.",
+      error: friendlyClientError(
+        error,
+        "Could not save your new password. Request a new reset link and try again."
+      ),
     };
   }
 

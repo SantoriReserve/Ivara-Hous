@@ -46,16 +46,12 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
           )}
           <PasswordAuthForm mode="login" nextPath={nextPath} />
           <p className="mx-auto mt-10 max-w-md text-center font-sans text-sm text-gray-mid">
-            Just purchased?{" "}
+            Just purchased or missing your access email?{" "}
             <Link
               href={ROUTES.loginForgotPassword}
               className="text-black underline underline-offset-4"
             >
-              Get your password setup email
-            </Link>
-            {" · "}
-            <Link href={ROUTES.claim} className="text-black underline underline-offset-4">
-              Create account from receipt
+              Resend password setup email
             </Link>
           </p>
         </div>

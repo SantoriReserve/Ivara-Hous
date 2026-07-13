@@ -10,12 +10,14 @@ import { ROUTES } from "@/lib/constants";
 export function ForgotPasswordForm() {
   const [error, setError] = useState<string | null>(null);
   const [sent, setSent] = useState(false);
+  const [info, setInfo] = useState<string | null>(null);
   const [submittedEmail, setSubmittedEmail] = useState("");
   const [isPending, startTransition] = useTransition();
 
   function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setError(null);
+    setInfo(null);
 
     const formData = new FormData(event.currentTarget);
     const email = String(formData.get("email") ?? "").trim();
@@ -30,6 +32,9 @@ export function ForgotPasswordForm() {
         return;
       }
 
+      if (result.message) {
+        setInfo(result.message);
+      }
       setSent(true);
     });
   }
@@ -41,21 +46,26 @@ export function ForgotPasswordForm() {
           Check Your Email
         </h1>
         <p className="mt-4 font-sans text-sm leading-relaxed text-gray-mid">
-          If an account or completed purchase exists for{" "}
-          <span className="text-black">{submittedEmail}</span>, we sent a secure link to set your
-          password. The link expires shortly for your security.
+          {info ?? (
+            <>
+              If an account or completed purchase exists for{" "}
+              <span className="text-black">{submittedEmail}</span>, we sent a secure link to set
+              your password. The link expires shortly for your security.
+            </>
+          )}
         </p>
         <p className="mt-6 font-sans text-sm text-gray-mid">
-          Didn&apos;t receive it? Check spam, or{" "}
+          Didn&apos;t get it? Check spam, wait about a minute, then{" "}
           <button
             type="button"
             onClick={() => {
               setSent(false);
               setError(null);
+              setInfo(null);
             }}
             className="text-black underline underline-offset-4"
           >
-            try again
+            resend the access email
           </button>
           .
         </p>
@@ -72,11 +82,11 @@ export function ForgotPasswordForm() {
     <div className="mx-auto max-w-md">
       <div className="mb-10 text-center">
         <h1 className="font-serif text-3xl font-normal tracking-tight text-black">
-          Reset Password
+          Set or Reset Password
         </h1>
         <p className="mt-4 font-sans text-sm leading-relaxed text-gray-mid">
-          Enter the email from your purchase. We&apos;ll send a secure link to set or reset your
-          password — including if you paid but never finished account setup.
+          Enter the email from your purchase. We&apos;ll send a secure access link — including if
+          you paid but never finished setup, or if the first email never arrived.
         </p>
       </div>
 
@@ -87,6 +97,7 @@ export function ForgotPasswordForm() {
           type="email"
           required
           autoComplete="email"
+          defaultValue={submittedEmail}
           className="luxury-input"
         />
 
@@ -103,7 +114,7 @@ export function ForgotPasswordForm() {
           className="w-full whitespace-nowrap"
           disabled={isPending}
         >
-          {isPending ? "Sending…" : "Send Reset Link"}
+          {isPending ? "Sending…" : "Send Access Email"}
         </Button>
       </form>
 
