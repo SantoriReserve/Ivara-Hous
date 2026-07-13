@@ -13,15 +13,23 @@ export function formatDate(value: string | null | undefined): string {
   if (!value) {
     return "—";
   }
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return "—";
+  }
   return new Intl.DateTimeFormat("en-US", {
     month: "short",
     day: "numeric",
     year: "numeric",
-  }).format(new Date(value));
+  }).format(date);
 }
 
 export function formatDateTime(value: string | null | undefined): string {
   if (!value) {
+    return "—";
+  }
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
     return "—";
   }
   return new Intl.DateTimeFormat("en-US", {
@@ -30,7 +38,7 @@ export function formatDateTime(value: string | null | undefined): string {
     year: "numeric",
     hour: "numeric",
     minute: "2-digit",
-  }).format(new Date(value));
+  }).format(date);
 }
 
 export function customerProfilePath(

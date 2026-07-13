@@ -1,7 +1,3 @@
-"use client";
-
-import { useRouter } from "next/navigation";
-
 type Column<T> = {
   key: string;
   header: string;
@@ -9,19 +5,25 @@ type Column<T> = {
   className?: string;
 };
 
+/**
+ * Server Component table.
+ *
+ * IMPORTANT: This must remain a Server Component. Admin list pages pass
+ * `render` functions from RSC. Client Components cannot receive function
+ * props from Server Components — that throws a Next.js serialization
+ * error (digest crash) at render time.
+ */
 export function AdminDataTable<T>({
   columns,
   rows,
   emptyMessage = "No records found.",
-  rowHref,
 }: {
   columns: Column<T>[];
   rows: T[];
   emptyMessage?: string;
+  /** @deprecated Use a Link inside a column render. Kept optional for type-compat during migration. */
   rowHref?: (row: T) => string;
 }) {
-  const router = useRouter();
-
   if (!rows.length) {
     return (
       <div className="border border-black/10 p-8 text-center font-sans text-sm text-gray-mid">
@@ -46,25 +48,18 @@ export function AdminDataTable<T>({
           </tr>
         </thead>
         <tbody className="divide-y divide-black/10 bg-white">
-          {rows.map((row, index) => {
-            const href = rowHref?.(row);
-            return (
-              <tr
-                key={index}
-                className={href ? "cursor-pointer hover:bg-black/[0.03]" : "hover:bg-black/[0.02]"}
-                onClick={href ? () => router.push(href) : undefined}
-              >
-                {columns.map((column) => (
-                  <td
-                    key={column.key}
-                    className={`px-4 py-3 font-sans text-sm text-black ${column.className ?? ""}`}
-                  >
-                    {column.render(row)}
-                  </td>
-                ))}
-              </tr>
-            );
-          })}
+          {rows.map((row, index) => (
+            <tr key={index} className="hover:bg-black/[0.02]">
+              {columns.map((column) => (
+                <td
+                  key={column.key}
+                  className={`px-4 py-3 font-sans text-sm text-black ${column.className ?? ""}`}
+                >
+                  {column.render(row)}
+                </td>
+              ))}
+            </tr>
+          ))}
         </tbody>
       </table>
     </div>

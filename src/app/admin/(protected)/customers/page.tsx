@@ -1,4 +1,5 @@
 import { Suspense } from "react";
+import Link from "next/link";
 import { AdminCustomerFilters } from "@/components/admin/AdminCustomerFilters";
 import { AdminDataTable } from "@/components/admin/AdminDataTable";
 import { AdminExportLink } from "@/components/admin/AdminExportLink";
@@ -62,7 +63,9 @@ export default async function AdminCustomersPage({ searchParams }: CustomersPage
       />
 
       <Suspense
-        fallback={<div className="border border-black/10 p-4 text-sm text-gray-mid">Loading filters…</div>}
+        fallback={
+          <div className="border border-black/10 p-4 text-sm text-gray-mid">Loading filters…</div>
+        }
       >
         <AdminCustomerFilters />
       </Suspense>
@@ -70,20 +73,22 @@ export default async function AdminCustomersPage({ searchParams }: CustomersPage
       <AdminDataTable<AdminCustomerRow>
         rows={customers}
         emptyMessage="No customers yet."
-        rowHref={(row) => customerProfilePath(row.customerKey, includeTestData)}
         columns={[
           {
             key: "name",
             header: "Name",
             render: (row) => (
-              <span>
+              <Link
+                href={customerProfilePath(row.customerKey, includeTestData)}
+                className="hover:underline"
+              >
                 {row.name}
                 {row.totalPurchasesForEmail > 1 ? (
                   <span className="ml-2 font-sans text-xs text-gray-muted">
                     ({row.purchaseNumber}/{row.totalPurchasesForEmail})
                   </span>
                 ) : null}
-              </span>
+              </Link>
             ),
           },
           { key: "email", header: "Email", render: (row) => row.email },
