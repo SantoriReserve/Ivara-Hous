@@ -1,9 +1,13 @@
-import Link from "next/link";
 import { Suspense } from "react";
 import { AdminCustomerFilters } from "@/components/admin/AdminCustomerFilters";
 import { AdminDataTable } from "@/components/admin/AdminDataTable";
 import { AdminExportLink } from "@/components/admin/AdminExportLink";
 import { AdminPageHeader } from "@/components/admin/AdminPageHeader";
+import {
+  AdminHealthBadge,
+  AdminLifecycleBadge,
+  AdminSourceBadge,
+} from "@/components/admin/AdminStatusBadges";
 import {
   customerProfilePath,
   formatCurrency,
@@ -28,9 +32,9 @@ export default async function AdminCustomersPage({ searchParams }: CustomersPage
   return (
     <div className="space-y-8">
       <AdminPageHeader
-        eyebrow="Customers"
-        title="Customer Portfolio"
-        description="Every paying customer with plan progress, login activity, and email delivery status."
+        eyebrow="Plan Customers"
+        title="Creator Plan Customers"
+        description="Everyone who purchased the 40-Day Creator Development Plan — progress, health, and acquisition source in one portfolio."
         actions={
           <AdminExportLink
             href="/api/admin/export/customers"
@@ -40,28 +44,28 @@ export default async function AdminCustomersPage({ searchParams }: CustomersPage
         }
       />
 
-      <Suspense fallback={<div className="border border-black/10 p-4 text-sm text-gray-mid">Loading filters…</div>}>
+      <Suspense
+        fallback={<div className="border border-black/10 p-4 text-sm text-gray-mid">Loading filters…</div>}
+      >
         <AdminCustomerFilters />
       </Suspense>
 
       <AdminDataTable<AdminCustomerRow>
         rows={customers}
+        rowHref={(row) => customerProfilePath(row.customerKey, includeTestData)}
         columns={[
           {
             key: "name",
             header: "Name",
             render: (row) => (
-              <Link
-                href={customerProfilePath(row.customerKey, includeTestData)}
-                className="hover:underline"
-              >
+              <span>
                 {row.name}
                 {row.totalPurchasesForEmail > 1 ? (
                   <span className="ml-2 font-sans text-xs text-gray-muted">
                     ({row.purchaseNumber}/{row.totalPurchasesForEmail})
                   </span>
                 ) : null}
-              </Link>
+              </span>
             ),
           },
           { key: "email", header: "Email", render: (row) => row.email },
@@ -72,35 +76,45 @@ export default async function AdminCustomersPage({ searchParams }: CustomersPage
           },
           {
             key: "amount",
-            header: "Amount",
+            header: "Amount Paid",
             render: (row) =>
               row.amountPaidCents != null ? formatCurrency(row.amountPaidCents) : "—",
           },
           {
-            key: "planStatus",
-            header: "Plan Status",
-            render: (row) => row.planStatus ?? "—",
+            key: "day",
+            header: "Current Day",
+            render: (row) => (row.currentDay != null ? `Day ${row.currentDay}/40` : "—"),
           },
           {
             key: "progress",
-            header: "Progress",
+            header: "Completion",
             render: (row) =>
               row.progressPercent != null ? formatPercent(row.progressPercent, 0) : "—",
           },
           {
-            key: "day",
-            header: "Current Day",
-            render: (row) => (row.currentDay != null ? String(row.currentDay) : "—"),
+            key: "lastActive",
+            header: "Last Active",
+            render: (row) => formatDateTime(row.lastActiveAt),
           },
           {
-            key: "login",
-            header: "Last Login",
-            render: (row) => formatDateTime(row.lastLogin),
+            key: "status",
+            header: "Status",
+            render: (row) => <AdminLifecycleBadge status={row.lifecycleStatus} />,
           },
           {
-            key: "emailStatus",
-            header: "Email Status",
-            render: (row) => row.emailStatus,
+            key: "health",
+            header: "Health",
+            render: (row) => <AdminHealthBadge health={row.health} />,
+          },
+          {
+            key: "score",
+            header: "Assessment",
+            render: (row) => (row.assessmentScore != null ? String(row.assessmentScore) : "—"),
+          },
+          {
+            key: "source",
+            header: "Source",
+            render: (row) => <AdminSourceBadge source={row.source} />,
           },
         ]}
       />

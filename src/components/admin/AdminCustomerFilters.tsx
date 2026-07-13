@@ -8,9 +8,14 @@ const FILTERS: Array<{ value: AdminCustomerFilter; label: string }> = [
   { value: "all", label: "All" },
   { value: "active", label: "Active" },
   { value: "completed", label: "Completed" },
-  { value: "not_started", label: "Not Started" },
-  { value: "high_engagement", label: "High Engagement" },
-  { value: "low_engagement", label: "Low Engagement" },
+  { value: "inactive", label: "Inactive" },
+  { value: "on_track", label: "On Track" },
+  { value: "needs_attention", label: "Needs Attention" },
+  { value: "at_risk", label: "At Risk" },
+  { value: "free_assessment", label: "Free Assessment" },
+  { value: "direct_purchase", label: "Direct Purchase" },
+  { value: "high_engagement", label: "High Completion" },
+  { value: "low_engagement", label: "Low Completion" },
 ];
 
 export function AdminCustomerFilters() {

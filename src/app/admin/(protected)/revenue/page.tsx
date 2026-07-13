@@ -32,11 +32,25 @@ export default async function AdminRevenuePage({ searchParams }: AdminRevenuePag
 
       <AdminMetricGrid
         metrics={[
-          { label: "Revenue Today", value: formatCurrency(metrics.revenueTodayCents) },
-          { label: "Revenue This Week", value: formatCurrency(metrics.revenueWeekCents) },
+          { label: "Total Revenue", value: formatCurrency(metrics.revenueAllTimeCents) },
           { label: "Revenue This Month", value: formatCurrency(metrics.revenueMonthCents) },
-          { label: "Revenue All Time", value: formatCurrency(metrics.revenueAllTimeCents) },
-          { label: "Total Purchases", value: String(metrics.totalPurchaseCount) },
+          { label: "Revenue This Week", value: formatCurrency(metrics.revenueWeekCents) },
+          { label: "Revenue Today", value: formatCurrency(metrics.revenueTodayCents) },
+          {
+            label: "Average Order Value",
+            value: formatCurrency(metrics.averageOrderValueCents),
+          },
+          { label: "Number of Purchases", value: String(metrics.totalPurchaseCount) },
+          {
+            label: "Refunds",
+            value: formatCurrency(metrics.refundsCents),
+            detail: "Coming soon",
+          },
+          {
+            label: "Revenue by Product",
+            value: "CDS only",
+            detail: "Multi-product breakdown coming soon",
+          },
         ]}
       />
 
@@ -47,7 +61,7 @@ export default async function AdminRevenuePage({ searchParams }: AdminRevenuePag
           valueFormatter={(value) => formatCurrency(value)}
         />
         <AdminBarChart
-          title="Monthly Revenue"
+          title="Monthly Revenue Chart"
           data={metrics.monthlyRevenue}
           valueFormatter={(value) => formatCurrency(value)}
           labelMode="monthly"

@@ -1,5 +1,10 @@
 import type { AssessmentRecord } from "@/lib/assessment-schema";
 import type { EmailDeliveryRecord } from "@/lib/email/email-delivery-repository";
+import type {
+  CustomerAcquisitionSource,
+  CustomerHealth,
+  CustomerLifecycleStatus,
+} from "@/lib/admin/customer-health";
 
 export type AdminTimeSeriesPoint = {
   date: string;
@@ -19,7 +24,9 @@ export type AdminOverviewMetrics = {
   assessmentToPurchaseRate: number;
   activePlans: number;
   completedPlans: number;
+  failedPlans: number;
   averagePlanCompletion: number;
+  averageCurrentDay: number;
   newCustomers7Days: number;
   newCustomers30Days: number;
   revenueOverTime: AdminTimeSeriesPoint[];
@@ -38,11 +45,16 @@ export type AdminCustomerRow = {
   progressPercent: number | null;
   currentDay: number | null;
   lastLogin: string | null;
+  lastActiveAt: string | null;
   emailStatus: string;
   userId: string | null;
   purchaseId: string | null;
   purchaseNumber: number;
   totalPurchasesForEmail: number;
+  lifecycleStatus: CustomerLifecycleStatus;
+  health: CustomerHealth;
+  assessmentScore: number | null;
+  source: CustomerAcquisitionSource;
 };
 
 export type AdminCustomerPurchaseSummary = {
@@ -52,6 +64,14 @@ export type AdminCustomerPurchaseSummary = {
   amountPaidCents: number;
   planStatus: string | null;
   progressPercent: number | null;
+  paymentStatus: string;
+};
+
+export type AdminActivityTimelineEvent = {
+  id: string;
+  occurredAt: string;
+  label: string;
+  detail?: string;
 };
 
 export type AdminCustomerDetail = {
@@ -60,15 +80,25 @@ export type AdminCustomerDetail = {
   email: string;
   userId: string | null;
   purchaseId: string | null;
+  joinDate: string | null;
   purchaseDate: string | null;
   amountPaidCents: number | null;
+  totalRevenueCents: number;
+  planTitle: string;
   planStatus: string | null;
+  paymentStatus: string;
   progressPercent: number | null;
   currentDay: number | null;
   tasksCompleted: number;
   tasksRemaining: number;
+  tasksSkipped: number;
+  consecutiveDaysActive: number;
   lastLogin: string | null;
   lastDashboardActivity: string | null;
+  lifecycleStatus: CustomerLifecycleStatus;
+  health: CustomerHealth;
+  assessmentScore: number | null;
+  source: CustomerAcquisitionSource;
   assessment: AssessmentRecord | null;
   content: {
     planned: number;
@@ -85,6 +115,7 @@ export type AdminCustomerDetail = {
   }>;
   emails: EmailDeliveryRecord[];
   allPurchases: AdminCustomerPurchaseSummary[];
+  timeline: AdminActivityTimelineEvent[];
 };
 
 export type AdminQueryOptions = {
@@ -96,10 +127,25 @@ export type AdminRevenueMetrics = {
   revenueWeekCents: number;
   revenueMonthCents: number;
   revenueAllTimeCents: number;
+  averageOrderValueCents: number;
+  refundsCents: number;
   dailyRevenue: AdminTimeSeriesPoint[];
   monthlyRevenue: AdminTimeSeriesPoint[];
   purchaseCountSeries: AdminTimeSeriesPoint[];
   totalPurchaseCount: number;
+};
+
+export type AdminConversionMetrics = {
+  visitorsLabel: string;
+  assessmentsStarted: number;
+  assessmentsCompleted: number;
+  purchased: number;
+  currentlyActive: number;
+  completedProgram: number;
+  assessmentToPurchaseRate: number;
+  purchaseToActiveRate: number;
+  activeToCompletedRate: number;
+  overallFunnelRate: number;
 };
 
 export type AdminEmailRow = EmailDeliveryRecord;
@@ -199,6 +245,13 @@ export type AdminCustomerFilter =
   | "all"
   | "active"
   | "completed"
+  | "inactive"
+  | "refunded"
   | "not_started"
   | "high_engagement"
-  | "low_engagement";
+  | "low_engagement"
+  | "on_track"
+  | "needs_attention"
+  | "at_risk"
+  | "free_assessment"
+  | "direct_purchase";

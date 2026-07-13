@@ -6,10 +6,22 @@ import { AdminPageHeader } from "@/components/admin/AdminPageHeader";
 import { formatCurrency, formatPercent } from "@/lib/admin/admin-format";
 import { getAdminOverviewMetrics } from "@/lib/admin/admin-repository";
 import { parseIncludeTestData } from "@/lib/admin/admin-test-data";
+import { ROUTES } from "@/lib/constants";
 
 type AdminHomePageProps = {
   searchParams: Promise<{ includeTestData?: string }>;
 };
+
+function withTest(path: string, includeTestData: boolean, extra = "") {
+  const params = new URLSearchParams();
+  if (includeTestData) params.set("includeTestData", "true");
+  if (extra) {
+    const extraParams = new URLSearchParams(extra);
+    extraParams.forEach((value, key) => params.set(key, value));
+  }
+  const query = params.toString();
+  return query ? `${path}?${query}` : path;
+}
 
 export default async function AdminHomePage({ searchParams }: AdminHomePageProps) {
   const params = await searchParams;
@@ -40,22 +52,66 @@ export default async function AdminHomePage({ searchParams }: AdminHomePageProps
 
       <AdminMetricGrid
         metrics={[
-          { label: "Total Revenue", value: formatCurrency(metrics.totalRevenueCents) },
-          { label: "Total Customers", value: String(metrics.totalCustomers) },
-          { label: "Total Purchases", value: String(metrics.totalPurchases) },
-          { label: "Total Assessments", value: String(metrics.totalAssessments) },
+          {
+            label: "Total Revenue",
+            value: formatCurrency(metrics.totalRevenueCents),
+            href: withTest(ROUTES.adminRevenue, includeTestData),
+          },
+          {
+            label: "Total Customers",
+            value: String(metrics.totalCustomers),
+            href: withTest(ROUTES.adminCustomers, includeTestData),
+          },
+          {
+            label: "Total Purchases",
+            value: String(metrics.totalPurchases),
+            href: withTest(ROUTES.adminRevenue, includeTestData),
+          },
+          {
+            label: "Total Assessments",
+            value: String(metrics.totalAssessments),
+            href: withTest(ROUTES.adminAssessments, includeTestData),
+          },
           {
             label: "Assessment → Purchase",
             value: formatPercent(metrics.assessmentToPurchaseRate, 1),
+            href: withTest(ROUTES.adminConversion, includeTestData),
           },
-          { label: "Active Plans", value: String(metrics.activePlans) },
-          { label: "Completed Plans", value: String(metrics.completedPlans) },
+          {
+            label: "Active Plans",
+            value: String(metrics.activePlans),
+            href: withTest(ROUTES.adminCustomers, includeTestData, "filter=active"),
+          },
+          {
+            label: "Completed Plans",
+            value: String(metrics.completedPlans),
+            href: withTest(ROUTES.adminCustomers, includeTestData, "filter=completed"),
+          },
+          {
+            label: "Failed Plans",
+            value: String(metrics.failedPlans),
+            href: withTest(ROUTES.adminPlans, includeTestData),
+          },
           {
             label: "Avg Plan Completion",
             value: formatPercent(metrics.averagePlanCompletion, 1),
+            href: withTest(ROUTES.adminPlans, includeTestData),
           },
-          { label: "New Customers (7d)", value: String(metrics.newCustomers7Days) },
-          { label: "New Customers (30d)", value: String(metrics.newCustomers30Days) },
+          {
+            label: "Avg Current Day",
+            value: metrics.averageCurrentDay.toFixed(1),
+            href: withTest(ROUTES.adminPlans, includeTestData),
+          },
+          {
+            label: "New Customers (7d)",
+            value: String(metrics.newCustomers7Days),
+            href: withTest(ROUTES.adminCustomers, includeTestData),
+          },
+          {
+            label: "New Customers (30d)",
+            value: String(metrics.newCustomers30Days),
+            href: withTest(ROUTES.adminCustomers, includeTestData),
+          },
         ]}
       />
 

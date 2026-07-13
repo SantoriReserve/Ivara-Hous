@@ -7,8 +7,9 @@ import { ROUTES } from "@/lib/constants";
 
 const ADMIN_NAV = [
   { href: ROUTES.admin, label: "Overview" },
-  { href: ROUTES.adminCustomers, label: "Customers" },
+  { href: ROUTES.adminCustomers, label: "Plan Customers" },
   { href: ROUTES.adminRevenue, label: "Revenue" },
+  { href: ROUTES.adminConversion, label: "Conversion" },
   { href: ROUTES.adminEmails, label: "Email Center" },
   { href: ROUTES.adminAssessments, label: "Assessments" },
   { href: ROUTES.adminPlans, label: "Plan Analytics" },

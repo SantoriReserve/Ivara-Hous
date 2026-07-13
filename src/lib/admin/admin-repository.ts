@@ -12,9 +12,16 @@ import {
 } from "@/lib/admin/admin-data-scope";
 import type { AdminDataScope } from "@/lib/admin/admin-test-data";
 import { isAutomatedTestEmail } from "@/lib/admin/admin-test-data";
+import {
+  resolveCustomerHealth,
+  resolveCustomerSource,
+  resolveLifecycleStatus,
+} from "@/lib/admin/customer-health";
 import type {
   AdminActivityMetrics,
+  AdminActivityTimelineEvent,
   AdminAssessmentRow,
+  AdminConversionMetrics,
   AdminCustomerDetail,
   AdminCustomerFilter,
   AdminCustomerPurchaseSummary,
@@ -77,6 +84,31 @@ function mapAssessmentRow(row: AssessmentRow): AssessmentRecord {
     analysis: row.analysis,
     paymentStatus: row.payment_status,
   };
+}
+
+function averageAssessmentScore(analysis: AssessmentRecord["analysis"] | null | undefined): number | null {
+  if (!analysis?.scores) {
+    return null;
+  }
+  const values = Object.values(analysis.scores).filter((value) => typeof value === "number");
+  if (!values.length) {
+    return null;
+  }
+  return Math.round(values.reduce((sum, value) => sum + value, 0) / values.length);
+}
+
+function latestTimestamp(...values: Array<string | null | undefined>): string | null {
+  let latest: string | null = null;
+  let latestMs = -1;
+  for (const value of values) {
+    if (!value) continue;
+    const ms = new Date(value).getTime();
+    if (!Number.isNaN(ms) && ms > latestMs) {
+      latestMs = ms;
+      latest = value;
+    }
+  }
+  return latest;
 }
 
 export function buildCustomerKey(userId: string | null, purchaseId: string): string {
@@ -247,28 +279,49 @@ async function getLatestEmailStatusByPurchase(
 
 function matchesCustomerFilter(
   filter: AdminCustomerFilter,
-  plan: PlanRow | undefined
+  row: Pick<
+    AdminCustomerRow,
+    "lifecycleStatus" | "health" | "source" | "planStatus" | "progressPercent"
+  >
 ): boolean {
   if (filter === "all") {
     return true;
   }
-  if (!plan) {
-    return filter === "not_started";
-  }
   if (filter === "active") {
-    return plan.status === "active";
+    return row.lifecycleStatus === "active";
   }
   if (filter === "completed") {
-    return plan.status === "completed";
+    return row.lifecycleStatus === "completed";
+  }
+  if (filter === "inactive") {
+    return row.lifecycleStatus === "inactive";
+  }
+  if (filter === "refunded") {
+    return row.lifecycleStatus === "refunded";
   }
   if (filter === "not_started") {
-    return plan.status === "generating" || plan.status === "failed";
+    return row.planStatus === "generating" || row.planStatus === "failed" || row.planStatus == null;
   }
   if (filter === "high_engagement") {
-    return plan.completion_percentage >= 50;
+    return (row.progressPercent ?? 0) >= 50;
   }
   if (filter === "low_engagement") {
-    return plan.completion_percentage < 20;
+    return (row.progressPercent ?? 0) < 20;
+  }
+  if (filter === "on_track") {
+    return row.health === "on_track";
+  }
+  if (filter === "needs_attention") {
+    return row.health === "needs_attention";
+  }
+  if (filter === "at_risk") {
+    return row.health === "at_risk";
+  }
+  if (filter === "free_assessment") {
+    return row.source === "free_assessment";
+  }
+  if (filter === "direct_purchase") {
+    return row.source === "direct_purchase";
   }
   return true;
 }
@@ -303,9 +356,14 @@ export async function getAdminOverviewMetrics(
 
   const activePlans = plans.filter((plan) => plan.status === "active").length;
   const completedPlans = plans.filter((plan) => plan.status === "completed").length;
+  const failedPlans = plans.filter((plan) => plan.status === "failed").length;
   const averagePlanCompletion =
     plans.length > 0
       ? plans.reduce((sum, plan) => sum + plan.completion_percentage, 0) / plans.length
+      : 0;
+  const averageCurrentDay =
+    plans.length > 0
+      ? plans.reduce((sum, plan) => sum + plan.current_focus_day, 0) / plans.length
       : 0;
 
   const cutoff7 = daysAgo(7);
@@ -365,7 +423,9 @@ export async function getAdminOverviewMetrics(
     assessmentToPurchaseRate,
     activePlans,
     completedPlans,
+    failedPlans,
     averagePlanCompletion,
+    averageCurrentDay,
     newCustomers7Days,
     newCustomers30Days,
     revenueOverTime,
@@ -390,7 +450,7 @@ export async function getAdminCustomers(params?: {
     getPlanInstances(),
     getProfilesMap(),
     getAuthUserMeta(),
-    supabase.from("assessments").select("id, email, full_name"),
+    supabase.from("assessments").select("id, email, full_name, analysis"),
   ]);
 
   const authEmailByUserId = new Map(
@@ -434,6 +494,20 @@ export async function getAdminCustomers(params?: {
     const purchaseNumber = (purchaseIndexByEmail.get(emailKey) ?? 0) + 1;
     purchaseIndexByEmail.set(emailKey, purchaseNumber);
 
+    const lastActiveAt = latestTimestamp(auth?.lastLogin, plan?.updated_at, plan?.completed_at);
+    const source = resolveCustomerSource(Boolean(purchase.assessment_id));
+    const lifecycleStatus = resolveLifecycleStatus({
+      purchaseStatus: purchase.status,
+      planStatus: plan?.status,
+      lastActiveAt,
+    });
+    const health = resolveCustomerHealth({
+      lifecycleStatus,
+      lastActiveAt,
+      progressPercent: plan?.completion_percentage ?? null,
+      purchaseDate: purchase.purchased_at,
+    });
+
     return {
       customerKey: buildCustomerKey(purchase.user_id, purchase.id),
       name,
@@ -444,11 +518,18 @@ export async function getAdminCustomers(params?: {
       progressPercent: plan?.completion_percentage ?? null,
       currentDay: plan?.current_focus_day ?? null,
       lastLogin: auth?.lastLogin ?? null,
+      lastActiveAt,
       emailStatus: emailStatusMap.get(purchase.id) ?? "not_sent",
       userId: purchase.user_id,
       purchaseId: purchase.id,
       purchaseNumber,
       totalPurchasesForEmail: purchasesByEmail.get(emailKey) ?? 1,
+      lifecycleStatus,
+      health,
+      assessmentScore: averageAssessmentScore(
+        assessment?.analysis as AssessmentRecord["analysis"] | undefined
+      ),
+      source,
     };
   });
 
@@ -457,8 +538,7 @@ export async function getAdminCustomers(params?: {
       !query ||
       row.name.toLowerCase().includes(query) ||
       row.email.toLowerCase().includes(query);
-    const plan = row.purchaseId ? plansByPurchase.get(row.purchaseId) : undefined;
-    return matchesQuery && matchesCustomerFilter(filter, plan);
+    return matchesQuery && matchesCustomerFilter(filter, row);
   });
 }
 
@@ -538,6 +618,7 @@ export async function getAdminCustomerDetail(
   const profile = resolvedUserId ? profiles.get(resolvedUserId) : undefined;
   const auth = resolvedUserId ? authUsers.get(resolvedUserId) : undefined;
   const assessmentRow = assessmentsRes.data as AssessmentRow | null;
+  const assessment = assessmentRow ? mapAssessmentRow(assessmentRow) : null;
 
   const contentRows = contentRes.data ?? [];
   const content = {
@@ -548,16 +629,53 @@ export async function getAdminCustomerDetail(
   };
 
   let lastDashboardActivity: string | null = null;
+  let tasksSkipped = 0;
+  let consecutiveDaysActive = 0;
+  const completionEvents: AdminActivityTimelineEvent[] = [];
+
   if (resolvedUserId) {
     const { data: completions } = await supabase
       .from("plan_task_completions")
-      .select("completed_at, updated_at")
+      .select("id, status, completed_at, updated_at, plan_day_task_id")
       .eq("user_id", resolvedUserId)
       .order("updated_at", { ascending: false })
-      .limit(1);
+      .limit(200);
 
-    const latest = completions?.[0];
+    const rows = completions ?? [];
+    const latest = rows[0];
     lastDashboardActivity = latest?.completed_at ?? latest?.updated_at ?? plan?.updated_at ?? null;
+    tasksSkipped = rows.filter((row) => row.status === "skipped").length;
+
+    const dayKeys = new Set<string>();
+    for (const row of rows) {
+      const stamp = row.completed_at ?? row.updated_at;
+      if (!stamp) continue;
+      dayKeys.add(toDateKey(stamp));
+      completionEvents.push({
+        id: `completion-${row.id}`,
+        occurredAt: stamp,
+        label: row.status === "skipped" ? "Skipped Task" : "Completed Task",
+        detail: row.status === "completed" ? "Required plan task completed" : "Task marked skipped",
+      });
+    }
+
+    const todayKey = toDateKey(new Date().toISOString());
+    const cursor = new Date();
+    for (let i = 0; i < 40; i += 1) {
+      const key = cursor.toISOString().slice(0, 10);
+      if (i === 0 && key !== todayKey && !dayKeys.has(key)) {
+        // allow streak to start from yesterday if nothing today
+        cursor.setDate(cursor.getDate() - 1);
+        continue;
+      }
+      if (!dayKeys.has(key)) {
+        break;
+      }
+      consecutiveDaysActive += 1;
+      cursor.setDate(cursor.getDate() - 1);
+    }
+  } else {
+    lastDashboardActivity = plan?.updated_at ?? null;
   }
 
   const customerEmails = filterEmailRecipient(
@@ -580,27 +698,115 @@ export async function getAdminCustomerDetail(
       amountPaidCents: row.amount_cents,
       planStatus: relatedPlan?.status ?? null,
       progressPercent: relatedPlan?.completion_percentage ?? null,
+      paymentStatus: row.status,
     };
   });
 
+  const lastActiveAt = latestTimestamp(auth?.lastLogin, lastDashboardActivity, plan?.updated_at);
+  const source = resolveCustomerSource(Boolean(purchase.assessment_id));
+  const lifecycleStatus = resolveLifecycleStatus({
+    purchaseStatus: purchase.status,
+    planStatus: plan?.status,
+    lastActiveAt,
+  });
+  const health = resolveCustomerHealth({
+    lifecycleStatus,
+    lastActiveAt,
+    progressPercent: plan?.completion_percentage ?? null,
+    purchaseDate: purchase.purchased_at,
+  });
+
+  const timeline: AdminActivityTimelineEvent[] = [
+    {
+      id: `purchase-${purchase.id}`,
+      occurredAt: purchase.purchased_at,
+      label: "Purchased Creator Development Plan",
+      detail: `Payment ${purchase.status}`,
+    },
+  ];
+
+  if (assessment) {
+    timeline.push({
+      id: `assessment-${assessment.assessmentId}`,
+      occurredAt: assessment.submittedAt,
+      label: "Completed Assessment",
+      detail: assessment.analysis.preview.creatorArchetype,
+    });
+  }
+
+  if (plan) {
+    timeline.push({
+      id: `plan-start-${plan.id}`,
+      occurredAt: plan.updated_at,
+      label: plan.status === "completed" ? "Completed Program" : "Plan In Progress",
+      detail: `Day ${plan.current_focus_day}/40 · ${plan.completion_percentage}% complete`,
+    });
+    if (plan.current_focus_day >= 1) {
+      timeline.push({
+        id: `day-focus-${plan.id}`,
+        occurredAt: plan.updated_at,
+        label: `Started Day ${plan.current_focus_day}`,
+      });
+    }
+    if (plan.completed_at) {
+      timeline.push({
+        id: `plan-completed-${plan.id}`,
+        occurredAt: plan.completed_at,
+        label: "Completed 40-Day Plan",
+      });
+    }
+  }
+
+  if (auth?.lastLogin) {
+    timeline.push({
+      id: `login-${resolvedUserId}`,
+      occurredAt: auth.lastLogin,
+      label: "Logged In",
+    });
+  }
+
+  for (const email of customerEmails.slice(0, 20)) {
+    timeline.push({
+      id: `email-${email.id}`,
+      occurredAt: email.createdAt,
+      label: `Email: ${email.emailType}`,
+      detail: email.status,
+    });
+  }
+
+  timeline.push(...completionEvents.slice(0, 40));
+  timeline.sort(
+    (a, b) => new Date(b.occurredAt).getTime() - new Date(a.occurredAt).getTime()
+  );
+
   return {
     customerKey: buildCustomerKey(resolvedUserId, purchase.id),
-    name: profile?.fullName || purchase.customer_email.split("@")[0] || "Customer",
+    name: profile?.fullName || assessment?.answers.fullName || purchase.customer_email.split("@")[0] || "Customer",
     email: purchase.customer_email,
     userId: resolvedUserId,
     purchaseId: purchase.id,
+    joinDate: auth?.createdAt ?? purchase.purchased_at,
     purchaseDate: purchase.purchased_at,
     amountPaidCents: purchase.amount_cents,
+    totalRevenueCents: relatedPurchases.reduce((sum, row) => sum + row.amount_cents, 0),
+    planTitle: plan?.plan_summary?.title || "40-Day Creator Development Plan",
     planStatus: plan?.status ?? null,
+    paymentStatus: purchase.status,
     progressPercent: plan?.completion_percentage ?? null,
     currentDay: plan?.current_focus_day ?? null,
     tasksCompleted: plan?.completed_required_tasks ?? 0,
     tasksRemaining: plan
       ? Math.max(plan.total_required_tasks - plan.completed_required_tasks, 0)
       : 0,
+    tasksSkipped,
+    consecutiveDaysActive,
     lastLogin: auth?.lastLogin ?? null,
     lastDashboardActivity,
-    assessment: assessmentRow ? mapAssessmentRow(assessmentRow) : null,
+    lifecycleStatus,
+    health,
+    assessmentScore: averageAssessmentScore(assessment?.analysis),
+    source,
+    assessment,
     content,
     learningInsights: (insightsRes.data ?? []).map((row) => ({
       id: row.id,
@@ -611,6 +817,7 @@ export async function getAdminCustomerDetail(
     })),
     emails: customerEmails,
     allPurchases,
+    timeline: timeline.slice(0, 60),
   };
 }
 
@@ -635,6 +842,8 @@ export async function getAdminRevenueMetrics(
     .filter((row) => new Date(row.purchased_at) >= monthAgo)
     .reduce((sum, row) => sum + row.amount_cents, 0);
   const revenueAllTimeCents = purchases.reduce((sum, row) => sum + row.amount_cents, 0);
+  const averageOrderValueCents =
+    purchases.length > 0 ? Math.round(revenueAllTimeCents / purchases.length) : 0;
 
   const dailyRevenue = buildDailySeries(
     purchases.map((row) => ({ date: row.purchased_at, amount: row.amount_cents })),
@@ -663,10 +872,61 @@ export async function getAdminRevenueMetrics(
     revenueWeekCents,
     revenueMonthCents,
     revenueAllTimeCents,
+    averageOrderValueCents,
+    refundsCents: 0,
     dailyRevenue,
     monthlyRevenue,
     purchaseCountSeries,
     totalPurchaseCount: purchases.length,
+  };
+}
+
+export async function getAdminConversionMetrics(
+  options?: AdminQueryOptions
+): Promise<AdminConversionMetrics> {
+  const supabase = getSupabaseAdmin();
+  const scope = toScope(options);
+  const [allPurchases, allPlans, assessmentsRes, authUsers] = await Promise.all([
+    getCompletedPurchases(),
+    getPlanInstances(),
+    supabase.from("assessments").select("id, email, full_name"),
+    getAuthUserMeta(),
+  ]);
+
+  const authEmailByUserId = new Map(
+    [...authUsers.entries()].map(([userId, meta]) => [userId, meta.email])
+  );
+  const testPurchaseIds = buildTestPurchaseIdSet(allPurchases);
+  const testUserIds = buildTestUserIdSet(allPurchases, authEmailByUserId);
+  const purchases = filterPurchases(allPurchases, scope);
+  const plans = filterPlans(allPlans, scope, testPurchaseIds, testUserIds);
+  const assessments = filterAssessments((assessmentsRes.data ?? []) as AssessmentRow[], scope);
+
+  const assessmentsCompleted = assessments.length;
+  const assessmentsStarted = assessmentsCompleted;
+  const purchased = purchases.length;
+  const currentlyActive = plans.filter((plan) => plan.status === "active").length;
+  const completedProgram = plans.filter((plan) => plan.status === "completed").length;
+
+  const assessmentToPurchaseRate =
+    assessmentsCompleted > 0 ? (purchased / assessmentsCompleted) * 100 : 0;
+  const purchaseToActiveRate = purchased > 0 ? (currentlyActive / purchased) * 100 : 0;
+  const activeBase = currentlyActive + completedProgram;
+  const activeToCompletedRate = activeBase > 0 ? (completedProgram / activeBase) * 100 : 0;
+  const overallFunnelRate =
+    assessmentsStarted > 0 ? (completedProgram / assessmentsStarted) * 100 : 0;
+
+  return {
+    visitorsLabel: "Site traffic not tracked yet",
+    assessmentsStarted,
+    assessmentsCompleted,
+    purchased,
+    currentlyActive,
+    completedProgram,
+    assessmentToPurchaseRate,
+    purchaseToActiveRate,
+    activeToCompletedRate,
+    overallFunnelRate,
   };
 }
 
