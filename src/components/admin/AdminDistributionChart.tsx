@@ -8,26 +8,31 @@ export function AdminDistributionChart({
   data: AdminDistributionBucket[];
 }) {
   const max = Math.max(...data.map((bucket) => bucket.count), 1);
+  const hasValues = data.some((bucket) => bucket.count > 0);
 
   return (
     <div className="border border-black/10 p-6">
       <p className="luxury-label mb-4 text-gray-muted">{title}</p>
-      <div className="space-y-3">
-        {data.map((bucket) => (
-          <div key={bucket.label}>
-            <div className="mb-1 flex items-center justify-between font-sans text-xs text-gray-mid">
-              <span>{bucket.label}</span>
-              <span>{bucket.count}</span>
+      {!hasValues ? (
+        <p className="py-8 text-center font-sans text-sm text-gray-mid">No distribution data yet.</p>
+      ) : (
+        <div className="space-y-3">
+          {data.map((bucket) => (
+            <div key={bucket.label}>
+              <div className="mb-1 flex items-center justify-between font-sans text-xs text-gray-mid">
+                <span>{bucket.label}</span>
+                <span>{bucket.count}</span>
+              </div>
+              <div className="h-2 bg-black/5">
+                <div
+                  className="h-full bg-black"
+                  style={{ width: `${(bucket.count / max) * 100}%` }}
+                />
+              </div>
             </div>
-            <div className="h-2 bg-black/5">
-              <div
-                className="h-full bg-black"
-                style={{ width: `${(bucket.count / max) * 100}%` }}
-              />
-            </div>
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

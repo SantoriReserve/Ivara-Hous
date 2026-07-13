@@ -154,5 +154,10 @@ export async function requireAdminUser(): Promise<AdminSession> {
     return session;
   }
 
+  const user = await getCurrentUser();
+  if (user?.email) {
+    redirect(ROUTES.adminAccessDenied);
+  }
+
   redirect(`${ROUTES.adminGate}?next=${ROUTES.admin}`);
 }

@@ -67,7 +67,7 @@ export function AdminNav() {
               key={module}
               className="font-sans text-xs text-gray-muted"
             >
-              {module}
+              {module} · Coming Soon
             </li>
           ))}
         </ul>

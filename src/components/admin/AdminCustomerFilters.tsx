@@ -7,9 +7,12 @@ import { SUGGESTED_CUSTOMER_TAGS } from "@/lib/admin/admin-products";
 
 const FILTERS: Array<{ value: AdminCustomerFilter; label: string }> = [
   { value: "all", label: "All" },
-  { value: "active", label: "Active" },
+  { value: "active", label: "Engaged" },
+  { value: "plan_active", label: "Active Plans" },
   { value: "completed", label: "Completed" },
   { value: "inactive", label: "Inactive" },
+  { value: "failed", label: "Failed Plans" },
+  { value: "not_started", label: "Not Started" },
   { value: "on_track", label: "On Track" },
   { value: "needs_attention", label: "Needs Attention" },
   { value: "at_risk", label: "At Risk" },
@@ -50,18 +53,30 @@ export function AdminCustomerFilters() {
         <label className="luxury-label mb-2 block text-gray-muted" htmlFor="customer-search">
           Search
         </label>
-        <input
-          id="customer-search"
-          type="search"
-          defaultValue={currentQuery}
-          placeholder="Name, email, or tag"
-          className="luxury-input w-full"
-          onKeyDown={(event) => {
-            if (event.key === "Enter") {
-              updateParams({ q: event.currentTarget.value });
-            }
-          }}
-        />
+        <div className="flex flex-wrap gap-2">
+          <input
+            id="customer-search"
+            type="search"
+            defaultValue={currentQuery}
+            placeholder="Name, email, or tag"
+            className="luxury-input min-w-[12rem] flex-1"
+            onKeyDown={(event) => {
+              if (event.key === "Enter") {
+                updateParams({ q: event.currentTarget.value });
+              }
+            }}
+          />
+          <button
+            type="button"
+            onClick={() => {
+              const input = document.getElementById("customer-search") as HTMLInputElement | null;
+              updateParams({ q: input?.value ?? "" });
+            }}
+            className="border border-black bg-black px-4 py-2 font-sans text-xs uppercase tracking-nav text-white"
+          >
+            Search
+          </button>
+        </div>
       </div>
       <div className="flex flex-wrap gap-2">
         {FILTERS.map((filter) => (

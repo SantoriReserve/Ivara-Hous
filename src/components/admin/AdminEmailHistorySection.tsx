@@ -20,8 +20,8 @@ export function AdminEmailHistorySection({ emails }: { emails: EmailDeliveryReco
                 <th className="px-3 py-2">Date Sent</th>
                 <th className="px-3 py-2">Status</th>
                 <th className="px-3 py-2">Delivery</th>
-                <th className="px-3 py-2">Opens</th>
-                <th className="px-3 py-2">Clicks</th>
+                <th className="px-3 py-2">Opens (Soon)</th>
+                <th className="px-3 py-2">Clicks (Soon)</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-black/10">

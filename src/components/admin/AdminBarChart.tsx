@@ -33,10 +33,16 @@ export function AdminBarChart({
   const chartHeight = 160;
   const labelEvery =
     labelMode === "monthly" ? 1 : Math.max(1, Math.ceil(visibleData.length / 6));
+  const hasValues = visibleData.some((point) => point.value > 0);
 
   return (
     <div className="border border-black/10 p-6">
       <p className="luxury-label mb-4 text-gray-muted">{title}</p>
+      {!visibleData.length || !hasValues ? (
+        <p className="py-10 text-center font-sans text-sm text-gray-mid">
+          No chart data yet.
+        </p>
+      ) : (
       <div className="overflow-x-auto">
         <div
           className="flex min-w-full items-end gap-1.5"
@@ -71,6 +77,7 @@ export function AdminBarChart({
           })}
         </div>
       </div>
+      )}
     </div>
   );
 }

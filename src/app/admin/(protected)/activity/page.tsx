@@ -5,6 +5,7 @@ import { AdminPageHeader } from "@/components/admin/AdminPageHeader";
 import { customerProfilePath, formatDate, formatPercent } from "@/lib/admin/admin-format";
 import { getAdminActivityMetrics } from "@/lib/admin/admin-repository";
 import { parseIncludeTestData } from "@/lib/admin/admin-test-data";
+import { ROUTES } from "@/lib/constants";
 
 type AdminActivityPageProps = {
   searchParams: Promise<{ includeTestData?: string }>;
@@ -25,11 +26,31 @@ export default async function AdminActivityPage({ searchParams }: AdminActivityP
 
       <AdminMetricGrid
         metrics={[
-          { label: "Active Today", value: String(activity.activeToday) },
-          { label: "Active This Week", value: String(activity.activeThisWeek) },
-          { label: "Inactive 7+ Days", value: String(activity.inactive7PlusDays) },
-          { label: "Below 20% Completion", value: String(activity.below20Percent) },
-          { label: "Above 80% Completion", value: String(activity.above80Percent) },
+          {
+            label: "Active Today",
+            value: String(activity.activeToday),
+            href: `${ROUTES.adminCustomers}?filter=active${includeTestData ? "&includeTestData=true" : ""}`,
+          },
+          {
+            label: "Active This Week",
+            value: String(activity.activeThisWeek),
+            href: `${ROUTES.adminCustomers}?filter=active${includeTestData ? "&includeTestData=true" : ""}`,
+          },
+          {
+            label: "Inactive 7+ Days",
+            value: String(activity.inactive7PlusDays),
+            href: `${ROUTES.adminCustomers}?filter=at_risk${includeTestData ? "&includeTestData=true" : ""}`,
+          },
+          {
+            label: "Below 20% Completion",
+            value: String(activity.below20Percent),
+            href: `${ROUTES.adminCustomers}?filter=low_engagement${includeTestData ? "&includeTestData=true" : ""}`,
+          },
+          {
+            label: "Above 80% Completion",
+            value: String(activity.above80Percent),
+            href: `${ROUTES.adminCustomers}?filter=high_engagement${includeTestData ? "&includeTestData=true" : ""}`,
+          },
         ]}
       />
 

@@ -69,6 +69,7 @@ export default async function AdminCustomersPage({ searchParams }: CustomersPage
 
       <AdminDataTable<AdminCustomerRow>
         rows={customers}
+        emptyMessage="No customers yet."
         rowHref={(row) => customerProfilePath(row.customerKey, includeTestData)}
         columns={[
           {

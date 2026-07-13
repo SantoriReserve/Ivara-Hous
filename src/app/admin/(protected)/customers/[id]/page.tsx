@@ -261,6 +261,53 @@ export default async function AdminCustomerProfilePage({
 
       <AdminEmailHistorySection emails={customer.emails} />
 
+      <div className="grid gap-6 lg:grid-cols-2">
+        <section className="space-y-4 border border-black/10 p-6">
+          <h3 className="font-serif text-2xl text-black">Content Progress</h3>
+          <div className="grid grid-cols-2 gap-3">
+            {(
+              [
+                ["Planned", customer.content.planned],
+                ["Filmed", customer.content.filmed],
+                ["Edited", customer.content.edited],
+                ["Posted", customer.content.posted],
+              ] as const
+            ).map(([label, value]) => (
+              <div key={label} className="border border-black/10 p-3">
+                <p className="luxury-label mb-1 text-gray-muted">{label}</p>
+                <p className="font-serif text-2xl text-black">{value}</p>
+              </div>
+            ))}
+          </div>
+          {customer.content.planned +
+            customer.content.filmed +
+            customer.content.edited +
+            customer.content.posted ===
+          0 ? (
+            <p className="font-sans text-sm text-gray-mid">No content activity yet.</p>
+          ) : null}
+        </section>
+
+        <section className="space-y-4 border border-black/10 p-6">
+          <h3 className="font-serif text-2xl text-black">Learning Insights</h3>
+          {customer.learningInsights.length ? (
+            <ul className="space-y-3">
+              {customer.learningInsights.slice(0, 6).map((insight) => (
+                <li key={insight.id} className="border border-black/10 p-3">
+                  <p className="luxury-label mb-1 text-gray-muted">
+                    Day {insight.dayNumber} · {formatDateTime(insight.createdAt)}
+                  </p>
+                  <p className="font-sans text-xs text-gray-mid">{insight.prompt}</p>
+                  <p className="mt-2 font-sans text-sm text-black">{insight.response}</p>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className="font-sans text-sm text-gray-mid">No learning insights yet.</p>
+          )}
+        </section>
+      </div>
+
       <section id="activity-timeline" className="space-y-4 border border-black/10 p-6">
         <h3 className="font-serif text-2xl text-black">Customer Journey</h3>
         <p className="font-sans text-sm text-gray-mid">

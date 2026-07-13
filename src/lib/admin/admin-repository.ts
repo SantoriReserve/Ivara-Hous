@@ -44,6 +44,16 @@ import type {
   AdminTrendAnalytics,
 } from "@/lib/admin/admin-types";
 import type { EmailDeliveryRecord } from "@/lib/email/email-delivery-repository";
+import {
+  EMPTY_ACTIVITY_METRICS,
+  EMPTY_CONVERSION_METRICS,
+  EMPTY_OVERVIEW_METRICS,
+  EMPTY_PLAN_ANALYTICS,
+  EMPTY_REVENUE_METRICS,
+  EMPTY_TREND_ANALYTICS,
+  safeEmail,
+  withAdminFallback,
+} from "@/lib/admin/safe-admin";
 
 type PurchaseRow = {
   id: string;
@@ -162,7 +172,8 @@ function countUniqueCustomersSince(purchases: PurchaseRow[], since: Date): numbe
   const emails = new Set<string>();
   for (const row of purchases) {
     if (new Date(row.purchased_at) >= since) {
-      emails.add(row.customer_email.toLowerCase());
+      const email = safeEmail(row.customer_email);
+      if (email) emails.add(email);
     }
   }
   return emails.size;
@@ -223,9 +234,48 @@ async function getAuthUserMeta(): Promise<
   return map;
 }
 
+async function selectPurchases(
+  build: (columns: string) => PromiseLike<{ data: unknown; error: { message: string } | null }>
+): Promise<PurchaseRow[]> {
+  const withSlug =
+    "id, user_id, assessment_id, customer_email, amount_cents, purchased_at, status, product_slug";
+  const withoutSlug =
+    "id, user_id, assessment_id, customer_email, amount_cents, purchased_at, status";
+
+  const primary = await build(withSlug);
+  if (!primary.error) {
+    return ((primary.data ?? []) as PurchaseRow[]).filter((row) =>
+      Boolean(safeEmail(row.customer_email))
+    );
+  }
+
+  console.error("[admin] purchase select with product_slug failed:", primary.error.message);
+  const fallback = await build(withoutSlug);
+  if (fallback.error) {
+    console.error("[admin] purchase select failed:", fallback.error.message);
+    return [];
+  }
+  return ((fallback.data ?? []) as PurchaseRow[]).filter((row) =>
+    Boolean(safeEmail(row.customer_email))
+  );
+}
+
+async function selectPurchaseMaybe(
+  build: (columns: string) => PromiseLike<{ data: unknown; error: { message: string } | null }>
+): Promise<PurchaseRow | null> {
+  const rows = await selectPurchases(async (columns) => {
+    const result = await build(columns);
+    return {
+      data: result.data ? [result.data] : [],
+      error: result.error,
+    };
+  });
+  return rows[0] ?? null;
+}
+
 async function getCompletedPurchases(): Promise<PurchaseRow[]> {
   const supabase = getSupabaseAdmin();
-  const { data, error } = await supabase
+  const primary = await supabase
     .from("purchases")
     .select(
       "id, user_id, assessment_id, customer_email, amount_cents, currency, status, purchased_at, product_slug"
@@ -233,12 +283,31 @@ async function getCompletedPurchases(): Promise<PurchaseRow[]> {
     .eq("status", "completed")
     .order("purchased_at", { ascending: false });
 
-  if (error) {
-    console.error("[admin] Failed to load purchases:", error.message);
+  if (!primary.error) {
+    return ((primary.data ?? []) as PurchaseRow[]).filter((row) =>
+      Boolean(safeEmail(row.customer_email))
+    );
+  }
+
+  console.error("[admin] Failed to load purchases with product_slug:", primary.error.message);
+
+  // Fallback for older schemas missing product_slug
+  const fallback = await supabase
+    .from("purchases")
+    .select(
+      "id, user_id, assessment_id, customer_email, amount_cents, currency, status, purchased_at"
+    )
+    .eq("status", "completed")
+    .order("purchased_at", { ascending: false });
+
+  if (fallback.error) {
+    console.error("[admin] Failed to load purchases:", fallback.error.message);
     return [];
   }
 
-  return (data ?? []) as PurchaseRow[];
+  return ((fallback.data ?? []) as PurchaseRow[]).filter((row) =>
+    Boolean(safeEmail(row.customer_email))
+  );
 }
 
 async function getPlanInstances(): Promise<PlanRow[]> {
@@ -303,6 +372,9 @@ function matchesCustomerFilter(
   if (filter === "active") {
     return row.lifecycleStatus === "active";
   }
+  if (filter === "plan_active") {
+    return row.planStatus === "active";
+  }
   if (filter === "completed") {
     return row.lifecycleStatus === "completed";
   }
@@ -312,8 +384,11 @@ function matchesCustomerFilter(
   if (filter === "refunded") {
     return row.lifecycleStatus === "refunded";
   }
+  if (filter === "failed") {
+    return row.planStatus === "failed";
+  }
   if (filter === "not_started") {
-    return row.planStatus === "generating" || row.planStatus === "failed" || row.planStatus == null;
+    return row.planStatus === "generating" || row.planStatus == null;
   }
   if (filter === "high_engagement") {
     return (row.progressPercent ?? 0) >= 50;
@@ -342,6 +417,12 @@ function matchesCustomerFilter(
 export async function getAdminOverviewMetrics(
   options?: AdminQueryOptions
 ): Promise<AdminOverviewMetrics> {
+  return withAdminFallback("getAdminOverviewMetrics", EMPTY_OVERVIEW_METRICS, () => load_getAdminOverviewMetrics(options));
+}
+
+async function load_getAdminOverviewMetrics(
+  options?: AdminQueryOptions
+): Promise<AdminOverviewMetrics> {
   const supabase = getSupabaseAdmin();
   const scope = toScope(options);
   const [allPurchases, allPlans, assessmentsRes, authUsers] = await Promise.all([
@@ -361,7 +442,7 @@ export async function getAdminOverviewMetrics(
   const assessments = filterAssessments((assessmentsRes.data ?? []) as AssessmentRow[], scope);
 
   const totalRevenueCents = purchases.reduce((sum, row) => sum + row.amount_cents, 0);
-  const customerEmails = new Set(purchases.map((row) => row.customer_email.toLowerCase()));
+  const customerEmails = new Set(purchases.map((row) => safeEmail(row.customer_email)).filter(Boolean));
   const totalAssessments = assessments.length;
   const paidAssessments = purchases.filter((row) => row.assessment_id).length;
   const assessmentToPurchaseRate =
@@ -454,6 +535,15 @@ export async function getAdminCustomers(params?: {
   tag?: string;
   includeTestData?: boolean;
 }): Promise<AdminCustomerRow[]> {
+  return withAdminFallback("getAdminCustomers", [], () => load_getAdminCustomers(params));
+}
+
+async function load_getAdminCustomers(params?: {
+  query?: string;
+  filter?: AdminCustomerFilter;
+  tag?: string;
+  includeTestData?: boolean;
+}): Promise<AdminCustomerRow[]> {
   const query = params?.query?.trim().toLowerCase() ?? "";
   const filter = params?.filter ?? "all";
   const tagFilter = params?.tag?.trim().toLowerCase() ?? "";
@@ -484,7 +574,7 @@ export async function getAdminCustomers(params?: {
 
   const purchasesByEmail = new Map<string, number>();
   for (const purchase of purchases) {
-    const key = purchase.customer_email.toLowerCase();
+    const key = safeEmail(purchase.customer_email);
     purchasesByEmail.set(key, (purchasesByEmail.get(key) ?? 0) + 1);
   }
 
@@ -505,7 +595,7 @@ export async function getAdminCustomers(params?: {
       assessment?.full_name?.trim() ||
       purchase.customer_email.split("@")[0] ||
       "Customer";
-    const emailKey = purchase.customer_email.toLowerCase();
+    const emailKey = safeEmail(purchase.customer_email);
     const purchaseNumber = (purchaseIndexByEmail.get(emailKey) ?? 0) + 1;
     purchaseIndexByEmail.set(emailKey, purchaseNumber);
     const customerKey = buildCustomerKey(purchase.user_id, purchase.id);
@@ -594,29 +684,32 @@ async function getAdminCustomerDetailUnsafe(
   let relatedPurchases: PurchaseRow[] = [];
 
   if (purchaseId) {
-    const { data } = await supabase
-      .from("purchases")
-      .select("id, user_id, assessment_id, customer_email, amount_cents, purchased_at, status, product_slug")
-      .eq("id", purchaseId)
-      .maybeSingle();
-    purchase = (data as PurchaseRow | null) ?? null;
+    purchase = await selectPurchaseMaybe((columns) =>
+      supabase.from("purchases").select(columns).eq("id", purchaseId).maybeSingle()
+    );
     if (purchase) {
-      const { data: siblings } = await supabase
-        .from("purchases")
-        .select("id, user_id, assessment_id, customer_email, amount_cents, purchased_at, status, product_slug")
-        .eq("customer_email", purchase.customer_email)
-        .eq("status", "completed")
-        .order("purchased_at", { ascending: false });
-      relatedPurchases = filterPurchases((siblings ?? []) as PurchaseRow[], scope);
+      relatedPurchases = await selectPurchases((columns) =>
+        supabase
+          .from("purchases")
+          .select(columns)
+          .eq("customer_email", purchase!.customer_email)
+          .eq("status", "completed")
+          .order("purchased_at", { ascending: false })
+      );
+      relatedPurchases = filterPurchases(relatedPurchases, scope);
     }
   } else if (userId) {
-    const { data } = await supabase
-      .from("purchases")
-      .select("id, user_id, assessment_id, customer_email, amount_cents, purchased_at, status, product_slug")
-      .eq("user_id", userId)
-      .eq("status", "completed")
-      .order("purchased_at", { ascending: false });
-    relatedPurchases = filterPurchases((data ?? []) as PurchaseRow[], scope);
+    relatedPurchases = filterPurchases(
+      await selectPurchases((columns) =>
+        supabase
+          .from("purchases")
+          .select(columns)
+          .eq("user_id", userId)
+          .eq("status", "completed")
+          .order("purchased_at", { ascending: false })
+      ),
+      scope
+    );
     purchase = relatedPurchases[0] ?? null;
   }
 
@@ -757,7 +850,7 @@ async function getAdminCustomerDetailUnsafe(
             delivery.purchaseId === purchase.id ||
             relatedPurchases.some((row) => row.id === delivery.purchaseId) ||
             (resolvedUserId && delivery.userId === resolvedUserId) ||
-            delivery.recipientEmail.toLowerCase() === purchase.customer_email.toLowerCase()
+            delivery.recipientEmail.toLowerCase() === safeEmail(purchase.customer_email)
         ),
         scope
       )
@@ -891,6 +984,12 @@ async function getAdminCustomerDetailUnsafe(
 export async function getAdminRevenueMetrics(
   options?: AdminQueryOptions
 ): Promise<AdminRevenueMetrics> {
+  return withAdminFallback("getAdminRevenueMetrics", EMPTY_REVENUE_METRICS, () => load_getAdminRevenueMetrics(options));
+}
+
+async function load_getAdminRevenueMetrics(
+  options?: AdminQueryOptions
+): Promise<AdminRevenueMetrics> {
   const scope = toScope(options);
   const allPurchases = await getCompletedPurchases();
   const purchases = filterPurchases(allPurchases, scope);
@@ -949,6 +1048,12 @@ export async function getAdminRevenueMetrics(
 }
 
 export async function getAdminConversionMetrics(
+  options?: AdminQueryOptions
+): Promise<AdminConversionMetrics> {
+  return withAdminFallback("getAdminConversionMetrics", EMPTY_CONVERSION_METRICS, () => load_getAdminConversionMetrics(options));
+}
+
+async function load_getAdminConversionMetrics(
   options?: AdminQueryOptions
 ): Promise<AdminConversionMetrics> {
   const supabase = getSupabaseAdmin();
@@ -1115,6 +1220,12 @@ async function getAdminNotificationsUnsafe(
 export async function getAdminTrendAnalytics(
   options?: AdminQueryOptions
 ): Promise<AdminTrendAnalytics> {
+  return withAdminFallback("getAdminTrendAnalytics", EMPTY_TREND_ANALYTICS, () => load_getAdminTrendAnalytics(options));
+}
+
+async function load_getAdminTrendAnalytics(
+  options?: AdminQueryOptions
+): Promise<AdminTrendAnalytics> {
   const scope = toScope(options);
   const supabase = getSupabaseAdmin();
   const [allPurchases, allPlans, authUsers, assessmentsRes, customers] = await Promise.all([
@@ -1220,6 +1331,12 @@ export async function getAdminTrendAnalytics(
 export async function getAdminAssessments(
   options?: AdminQueryOptions
 ): Promise<AdminAssessmentRow[]> {
+  return withAdminFallback("getAdminAssessments", [], () => load_getAdminAssessments(options));
+}
+
+async function load_getAdminAssessments(
+  options?: AdminQueryOptions
+): Promise<AdminAssessmentRow[]> {
   const supabase = getSupabaseAdmin();
   const scope = toScope(options);
   const { data, error } = await supabase
@@ -1251,20 +1368,36 @@ export async function getAdminAssessmentById(
   assessmentId: string,
   options?: AdminQueryOptions
 ): Promise<AssessmentRecord | null> {
-  const supabase = getSupabaseAdmin();
-  const scope = toScope(options);
-  const { data } = await supabase.from("assessments").select("*").eq("id", assessmentId).maybeSingle();
-  if (!data) {
-    return null;
-  }
-  const row = data as AssessmentRow;
-  if (!scope.includeTestData && filterAssessments([row], scope).length === 0) {
-    return null;
-  }
-  return mapAssessmentRow(row);
+  return withAdminFallback("getAdminAssessmentById", null, async () => {
+    const supabase = getSupabaseAdmin();
+    const scope = toScope(options);
+    const { data, error } = await supabase
+      .from("assessments")
+      .select("*")
+      .eq("id", assessmentId)
+      .maybeSingle();
+    if (error) {
+      console.error("[admin] getAdminAssessmentById failed:", error.message);
+      return null;
+    }
+    if (!data) {
+      return null;
+    }
+    const row = data as AssessmentRow;
+    if (!scope.includeTestData && filterAssessments([row], scope).length === 0) {
+      return null;
+    }
+    return mapAssessmentRow(row);
+  });
 }
 
 export async function getAdminPlanAnalytics(
+  options?: AdminQueryOptions
+): Promise<AdminPlanAnalytics> {
+  return withAdminFallback("getAdminPlanAnalytics", EMPTY_PLAN_ANALYTICS, () => load_getAdminPlanAnalytics(options));
+}
+
+async function load_getAdminPlanAnalytics(
   options?: AdminQueryOptions
 ): Promise<AdminPlanAnalytics> {
   const supabase = getSupabaseAdmin();
@@ -1435,6 +1568,12 @@ export async function getAdminPlanAnalytics(
 export async function getAdminActivityMetrics(
   options?: AdminQueryOptions
 ): Promise<AdminActivityMetrics> {
+  return withAdminFallback("getAdminActivityMetrics", EMPTY_ACTIVITY_METRICS, () => load_getAdminActivityMetrics(options));
+}
+
+async function load_getAdminActivityMetrics(
+  options?: AdminQueryOptions
+): Promise<AdminActivityMetrics> {
   const supabase = getSupabaseAdmin();
   const scope = toScope(options);
   const [allPlans, allPurchases, profiles, authUsers] = await Promise.all([
@@ -1517,18 +1656,26 @@ export async function getAdminActivityMetrics(
 }
 
 export async function getAdminPurchasesForExport(options?: AdminQueryOptions) {
-  const scope = toScope(options);
-  return filterPurchases(await getCompletedPurchases(), scope);
+  return withAdminFallback("getAdminPurchasesForExport", [], async () => {
+    const scope = toScope(options);
+    return filterPurchases(await getCompletedPurchases(), scope);
+  });
 }
 
 export async function getAdminAssessmentsForExport(options?: AdminQueryOptions) {
-  const supabase = getSupabaseAdmin();
-  const scope = toScope(options);
-  const { data } = await supabase
-    .from("assessments")
-    .select("id, full_name, email, submitted_at, payment_status, analysis")
-    .order("submitted_at", { ascending: false });
-  return filterAssessments((data ?? []) as AssessmentRow[], scope);
+  return withAdminFallback("getAdminAssessmentsForExport", [], async () => {
+    const supabase = getSupabaseAdmin();
+    const scope = toScope(options);
+    const { data, error } = await supabase
+      .from("assessments")
+      .select("id, full_name, email, submitted_at, payment_status, analysis")
+      .order("submitted_at", { ascending: false });
+    if (error) {
+      console.error("[admin] getAdminAssessmentsForExport failed:", error.message);
+      return [];
+    }
+    return filterAssessments((data ?? []) as AssessmentRow[], scope);
+  });
 }
 
 export async function getAdminEmailDeliveries(
@@ -1537,21 +1684,32 @@ export async function getAdminEmailDeliveries(
     limit?: number;
   }
 ): Promise<EmailDeliveryRecord[]> {
-  const scope = toScope(options);
-  const deliveries = await listEmailDeliveries({
-    limit: options?.limit ?? 500,
-    status: options?.status,
+  return withAdminFallback("getAdminEmailDeliveries", [], async () => {
+    const scope = toScope(options);
+    const deliveries = await listEmailDeliveries({
+      limit: options?.limit ?? 500,
+      status: options?.status,
+    });
+    return filterEmailRecipient(deliveries, scope);
   });
-  return filterEmailRecipient(deliveries, scope);
 }
 
 export async function getAdminEmailStats(options?: AdminQueryOptions): Promise<{
   totalSent: number;
   totalFailed: number;
 }> {
-  const deliveries = await getAdminEmailDeliveries({ ...options, limit: 5000 });
-  return {
-    totalSent: deliveries.filter((row) => row.status === "sent").length,
-    totalFailed: deliveries.filter((row) => row.status === "failed").length,
-  };
+  return withAdminFallback(
+    "getAdminEmailStats",
+    { totalSent: 0, totalFailed: 0 },
+    async () => {
+      const deliveries = await getAdminEmailDeliveries({
+        includeTestData: options?.includeTestData,
+        limit: 5000,
+      });
+      return {
+        totalSent: deliveries.filter((row) => row.status === "sent").length,
+        totalFailed: deliveries.filter((row) => row.status === "failed").length,
+      };
+    }
+  );
 }

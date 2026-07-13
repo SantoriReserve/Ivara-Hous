@@ -79,6 +79,7 @@ export default async function AdminEmailsPage({ searchParams }: EmailsPageProps)
 
       <AdminDataTable<EmailDeliveryRecord>
         rows={deliveries}
+        emptyMessage="No email deliveries recorded yet."
         columns={[
           { key: "recipient", header: "Recipient", render: (row) => row.recipientEmail },
           { key: "type", header: "Email Type", render: (row) => row.emailType },

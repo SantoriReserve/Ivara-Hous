@@ -94,7 +94,7 @@ export default async function AdminHomePage({ searchParams }: AdminHomePageProps
           {
             label: "Active Plans",
             value: String(metrics.activePlans),
-            href: withTest(ROUTES.adminCustomers, includeTestData, "filter=active"),
+            href: withTest(ROUTES.adminCustomers, includeTestData, "filter=plan_active"),
           },
           {
             label: "Completed Plans",
@@ -104,7 +104,7 @@ export default async function AdminHomePage({ searchParams }: AdminHomePageProps
           {
             label: "Failed Plans",
             value: String(metrics.failedPlans),
-            href: withTest(ROUTES.adminPlans, includeTestData),
+            href: withTest(ROUTES.adminCustomers, includeTestData, "filter=failed"),
           },
           {
             label: "Avg Plan Completion",

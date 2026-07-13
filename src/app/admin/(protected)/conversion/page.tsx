@@ -36,7 +36,7 @@ export default async function AdminConversionPage({ searchParams }: ConversionPa
     {
       label: "Currently Active",
       value: String(metrics.currentlyActive),
-      href: `${ROUTES.adminCustomers}?filter=active${includeTestData ? "&includeTestData=true" : ""}`,
+      href: `${ROUTES.adminCustomers}?filter=plan_active${includeTestData ? "&includeTestData=true" : ""}`,
     },
     {
       label: "Completed Program",

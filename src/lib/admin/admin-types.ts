@@ -300,9 +300,11 @@ export type AdminActivityMetrics = {
 export type AdminCustomerFilter =
   | "all"
   | "active"
+  | "plan_active"
   | "completed"
   | "inactive"
   | "refunded"
+  | "failed"
   | "not_started"
   | "high_engagement"
   | "low_engagement"

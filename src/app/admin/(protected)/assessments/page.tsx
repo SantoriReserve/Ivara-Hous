@@ -33,6 +33,7 @@ export default async function AdminAssessmentsPage({ searchParams }: AdminAssess
 
       <AdminDataTable<AdminAssessmentRow>
         rows={assessments}
+        emptyMessage="No assessments available yet."
         columns={[
           {
             key: "name",

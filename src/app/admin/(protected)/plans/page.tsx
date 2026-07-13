@@ -29,7 +29,7 @@ export default async function AdminPlansPage({ searchParams }: AdminPlansPagePro
           {
             label: "Active Plans",
             value: String(analytics.activePlans),
-            href: `${ROUTES.adminCustomers}?filter=active${testSuffix}`,
+            href: `${ROUTES.adminCustomers}?filter=plan_active${testSuffix}`,
           },
           {
             label: "Completed Plans",
@@ -39,7 +39,7 @@ export default async function AdminPlansPage({ searchParams }: AdminPlansPagePro
           {
             label: "Failed Plans",
             value: String(analytics.failedPlans),
-            href: `${ROUTES.adminCustomers}?filter=not_started${testSuffix}`,
+            href: `${ROUTES.adminCustomers}?filter=failed${testSuffix}`,
           },
           {
             label: "Average Completion",
@@ -61,12 +61,16 @@ export default async function AdminPlansPage({ searchParams }: AdminPlansPagePro
             Task Analytics
           </p>
           <ul className="space-y-3">
-            {analytics.mostCompletedTasks.map((task) => (
-              <li key={task.title} className="flex items-center justify-between font-sans text-sm">
-                <span>{task.title}</span>
-                <span className="text-gray-mid">{task.count}</span>
-              </li>
-            ))}
+            {analytics.mostCompletedTasks.length ? (
+              analytics.mostCompletedTasks.map((task) => (
+                <li key={task.title} className="flex items-center justify-between font-sans text-sm">
+                  <span>{task.title}</span>
+                  <span className="text-gray-mid">{task.count}</span>
+                </li>
+              ))
+            ) : (
+              <li className="font-sans text-sm text-gray-mid">No completed task data yet.</li>
+            )}
           </ul>
         </section>
 

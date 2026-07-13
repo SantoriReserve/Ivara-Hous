@@ -68,7 +68,7 @@ export function AdminCustomerQuickActions({
           href={`/admin/customers/${encodeURIComponent(customerKey)}/preview`}
           className="border border-black/20 px-3 py-2 font-sans text-xs uppercase tracking-nav text-gray-mid transition-colors hover:border-black hover:text-black"
         >
-          Open Dashboard as Customer
+          Preview Progress Snapshot
         </a>
         <button
           type="button"
@@ -86,8 +86,11 @@ export function AdminCustomerQuickActions({
         >
           Resend Password Setup
         </button>
-        <span className="border border-dashed border-black/15 px-3 py-2 font-sans text-xs uppercase tracking-nav text-gray-muted">
-          Download Report (Soon)
+        <span
+          className="border border-dashed border-black/15 px-3 py-2 font-sans text-xs uppercase tracking-nav text-gray-muted"
+          title="PDF customer reports are not available yet"
+        >
+          Download Report · Coming Soon
         </span>
       </div>
       {message ? <p className="font-sans text-sm text-black">{message}</p> : null}
