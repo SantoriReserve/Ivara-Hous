@@ -41,9 +41,9 @@ export function ForgotPasswordForm() {
           Check Your Email
         </h1>
         <p className="mt-4 font-sans text-sm leading-relaxed text-gray-mid">
-          If an account exists for{" "}
-          <span className="text-black">{submittedEmail}</span>, we sent a secure link to reset
-          your password. The link expires shortly for your security.
+          If an account or completed purchase exists for{" "}
+          <span className="text-black">{submittedEmail}</span>, we sent a secure link to set your
+          password. The link expires shortly for your security.
         </p>
         <p className="mt-6 font-sans text-sm text-gray-mid">
           Didn&apos;t receive it? Check spam, or{" "}
@@ -75,8 +75,8 @@ export function ForgotPasswordForm() {
           Reset Password
         </h1>
         <p className="mt-4 font-sans text-sm leading-relaxed text-gray-mid">
-          Enter the email associated with your creator dashboard account. We&apos;ll send you a
-          secure link to choose a new password.
+          Enter the email from your purchase. We&apos;ll send a secure link to set or reset your
+          password — including if you paid but never finished account setup.
         </p>
       </div>
 

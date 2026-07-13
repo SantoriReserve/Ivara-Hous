@@ -1,4 +1,5 @@
 import type Stripe from "stripe";
+import { normalizeEmail } from "@/lib/auth/normalize-email";
 import {
   getCheckoutSessionCustomerId,
   getCheckoutSessionEmail,
@@ -41,7 +42,7 @@ function buildPurchaseInsert(session: Stripe.Checkout.Session): PurchaseInsert |
 
   return {
     assessmentId: null,
-    customerEmail,
+    customerEmail: normalizeEmail(customerEmail),
     stripeCustomerId: getCheckoutSessionCustomerId(session),
     stripeCheckoutSessionId: session.id,
     stripePaymentIntentId: getCheckoutSessionPaymentIntentId(session),
@@ -122,4 +123,26 @@ export async function getActivePurchaseForUser(
   }
 
   return data ? mapPurchaseRow(data) : null;
+}
+
+export async function getCompletedPurchasesByEmail(
+  email: string
+): Promise<PurchaseRecord[]> {
+  const supabase = getSupabaseAdmin();
+  const normalized = normalizeEmail(email);
+
+  const { data, error } = await supabase
+    .from("purchases")
+    .select("*")
+    .eq("status", "completed")
+    .eq("product_slug", CREATOR_DEVELOPMENT_PLAN_PRODUCT.slug)
+    .order("purchased_at", { ascending: false });
+
+  if (error) {
+    throw new Error(`Failed to load purchases by email: ${error.message}`);
+  }
+
+  return (data ?? [])
+    .map(mapPurchaseRow)
+    .filter((purchase) => normalizeEmail(purchase.customerEmail) === normalized);
 }

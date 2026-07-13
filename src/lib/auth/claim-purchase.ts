@@ -1,9 +1,6 @@
 import { getSupabaseAdmin } from "@/lib/supabase/admin";
+import { normalizeEmail } from "@/lib/auth/normalize-email";
 import { getPurchaseByCheckoutSessionId } from "@/lib/purchase-repository";
-
-function normalizeEmail(email: string): string {
-  return email.trim().toLowerCase();
-}
 
 async function linkAssessmentToUser(
   assessmentId: string | null,

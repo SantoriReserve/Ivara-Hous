@@ -87,12 +87,15 @@ export default async function ClaimPage({ searchParams }: ClaimPageProps) {
         <>
           <PageHero
             label="Create Account"
-            title="Account Already Linked"
-            description="This purchase is already connected to a dashboard account. Sign in to continue."
+            title="Account Ready"
+            description="Your purchase is already linked to a dashboard account. Set or reset your password, then sign in."
           />
           <section className="py-section text-center sm:py-section-md lg:py-section-xl">
-            <div className="luxury-container">
-              <Button href={ROUTES.login} variant="primary" size="lg">
+            <div className="luxury-container flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
+              <Button href={ROUTES.loginForgotPassword} variant="primary" size="lg">
+                Set / Reset Password
+              </Button>
+              <Button href={ROUTES.login} variant="secondary" size="lg">
                 Sign In
               </Button>
             </div>
@@ -106,7 +109,7 @@ export default async function ClaimPage({ searchParams }: ClaimPageProps) {
         <PageHero
           label="Create Account"
           title="Access Your Dashboard"
-          description="Create your account with the same email from checkout. You will be signed in and taken directly to your dashboard."
+          description="Create your password with the same email from checkout. You will be signed in and taken directly to your dashboard."
         />
         <section className="py-section sm:py-section-md lg:py-section-xl">
           <div className="luxury-container">
@@ -114,12 +117,20 @@ export default async function ClaimPage({ searchParams }: ClaimPageProps) {
               mode="register"
               sessionId={sessionId}
               defaultEmail={customerEmail}
-              title="Create Your Account"
+              title="Create Your Password"
               description="Use your checkout email and choose a password. Your dashboard will open immediately — no email confirmation required."
-              submitLabel="Create Account"
+              submitLabel="Create Password & Continue"
             />
             <p className="mx-auto mt-10 max-w-md text-center font-sans text-sm text-gray-mid">
-              Already have an account?{" "}
+              Prefer email setup?{" "}
+              <Link
+                href={ROUTES.loginForgotPassword}
+                className="text-black underline underline-offset-4"
+              >
+                Send me an access link
+              </Link>
+              {" · "}
+              Already set a password?{" "}
               <Link href={ROUTES.login} className="text-black underline underline-offset-4">
                 Sign in
               </Link>

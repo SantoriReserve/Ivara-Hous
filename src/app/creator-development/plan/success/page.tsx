@@ -64,7 +64,7 @@ export default async function CreatorDevelopmentPlanSuccessPage({
       <ConfirmationLayout
         sessionId={sessionId}
         title="Purchase Confirmed"
-        description="Your 40-Day Creator Development Plan is confirmed. Create your account below to access your creator dashboard instantly."
+        description="Your 40-Day Creator Development Plan is confirmed. Check your email for a secure link to set your password and open your dashboard."
       >
         <dl className="mx-auto mt-12 max-w-md space-y-6 text-left">
           <div>
@@ -89,10 +89,17 @@ export default async function CreatorDevelopmentPlanSuccessPage({
           )}
           {customerEmail && (
             <div>
-              <dt className="luxury-label mb-2 text-white/50">Confirmation Email</dt>
+              <dt className="luxury-label mb-2 text-white/50">Account Email</dt>
               <dd className="font-sans text-sm text-white">{customerEmail}</dd>
             </div>
           )}
+          <div>
+            <dt className="luxury-label mb-2 text-white/50">Next Step</dt>
+            <dd className="font-sans text-sm leading-relaxed text-white/80">
+              We emailed a password setup link to this address. You can also create your
+              password here if the email has not arrived yet.
+            </dd>
+          </div>
         </dl>
       </ConfirmationLayout>
     );
@@ -138,19 +145,19 @@ function ConfirmationLayout({
           <div className="mt-12 flex flex-col items-stretch justify-center gap-3 sm:flex-row sm:flex-wrap sm:items-center">
             {!error && (
               <Button href={claimHref} variant="primary" size="lg" className="w-full sm:w-auto">
-                Create Your Account
+                Set Password &amp; Open Dashboard
               </Button>
             )}
             <Button href={ROUTES.login} variant="secondary" size="lg" className="w-full sm:w-auto">
               Sign&nbsp;In
             </Button>
             <Button
-              href={ROUTES.creatorDevelopmentPlan}
+              href={ROUTES.loginForgotPassword}
               variant="ghost"
               size="lg"
               className="w-full text-white hover:text-white/80 sm:w-auto"
             >
-              Return To Plan Overview
+              Resend Access Email
             </Button>
           </div>
         </div>

@@ -26,7 +26,7 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
       <PageHero
         label="Creator Dashboard"
         title="Sign In"
-        description="Sign in with the email and password you created after purchase."
+        description="Sign in with the email from your purchase. If you have not set a password yet, use Forgot Password to receive an access link."
       />
       <section className="py-section sm:py-section-md lg:py-section-xl">
         <div className="luxury-container">
@@ -40,14 +40,22 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
           )}
           {error === "auth_callback_failed" && (
             <p className="mx-auto mb-8 max-w-md text-center font-sans text-sm text-red-600" role="alert">
-              Sign-in could not be completed. Use your email and password below.
+              Sign-in could not be completed. Use your email and password below, or request a new
+              password reset link.
             </p>
           )}
           <PasswordAuthForm mode="login" nextPath={nextPath} />
           <p className="mx-auto mt-10 max-w-md text-center font-sans text-sm text-gray-mid">
             Just purchased?{" "}
+            <Link
+              href={ROUTES.loginForgotPassword}
+              className="text-black underline underline-offset-4"
+            >
+              Get your password setup email
+            </Link>
+            {" · "}
             <Link href={ROUTES.claim} className="text-black underline underline-offset-4">
-              Create your account
+              Create account from receipt
             </Link>
           </p>
         </div>

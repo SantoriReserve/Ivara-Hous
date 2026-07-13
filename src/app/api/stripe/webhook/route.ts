@@ -1,3 +1,4 @@
+import { provisionPurchaseAccess } from "@/lib/auth/provision-purchase-access";
 import { notifyOwnerPurchase } from "@/lib/email/owner-notifications";
 import { saveCompletedPurchaseFromCheckoutSession } from "@/lib/purchase-repository";
 import { getStripe } from "@/lib/stripe";
@@ -50,6 +51,25 @@ export async function POST(request: Request) {
       customerEmail: purchase.customerEmail,
       amountCents: purchase.amountCents,
     });
+
+    try {
+      const provision = await provisionPurchaseAccess(purchase);
+      console.log("[stripe/webhook] Purchase access provisioned:", {
+        purchaseId: purchase.id,
+        customerEmail: purchase.customerEmail,
+        userId: provision.userId,
+        createdUser: provision.createdUser,
+        claimed: provision.claimed,
+        emailSent: provision.emailSent,
+        reason: provision.reason ?? null,
+      });
+
+      if (!provision.claimed || !provision.emailSent) {
+        console.error("[stripe/webhook] Account provisioning incomplete:", provision);
+      }
+    } catch (provisionError) {
+      console.error("[stripe/webhook] Account provisioning failed:", provisionError);
+    }
 
     try {
       const ownerResult = await notifyOwnerPurchase(purchase);

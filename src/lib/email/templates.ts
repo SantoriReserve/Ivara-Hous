@@ -168,7 +168,7 @@ export function renderPurchaseCompleteEmail(params: {
         <p style="margin:0 0 18px;">Your purchase of <strong style="color:${PALETTE.charcoal};">${params.productName}</strong> is confirmed.</p>
         <p style="margin:0 0 18px;">Your personalized plan — <strong style="color:${PALETTE.charcoal};">${params.planTitle}</strong> — is attached to this email as a PDF for your records. It includes your assessment summary, creator archetype, readiness scores, and the complete 40-day roadmap.</p>
         <p style="margin:0 0 10px;font-size:13px;letter-spacing:0.08em;text-transform:uppercase;color:${PALETTE.muted};">Your dashboard</p>
-        <p style="margin:0 0 18px;">Sign in with the email and password you created at checkout to access your creator operating system:</p>
+        <p style="margin:0 0 18px;">Set your password from the access email we sent, then sign in with this checkout email to open your creator operating system:</p>
         <ol style="margin:0 0 18px;padding-left:20px;">
           <li style="margin-bottom:10px;"><strong>Today</strong> — daily focus, tasks, and learning insights</li>
           <li style="margin-bottom:10px;"><strong>Partnerships</strong> — hospitality targets with outreach actions</li>
@@ -246,6 +246,46 @@ export function renderGeneralCustomerNotificationEmail(params: {
       bodyHtml: params.messageHtml,
       ctaLabel: params.ctaLabel,
       ctaUrl: params.ctaUrl,
+    }),
+  };
+}
+
+export function renderAccountAccessEmail(params: {
+  fullName: string;
+  actionUrl: string;
+  loginUrl: string;
+  purpose: "setup" | "reset";
+}): { subject: string; html: string } {
+  const firstName = firstNameFrom(params.fullName);
+  const isSetup = params.purpose === "setup";
+
+  return {
+    subject: isSetup
+      ? `Set your password to access your dashboard — ${SITE_NAME}`
+      : `Reset your password — ${SITE_NAME}`,
+    html: renderBrandedEmail({
+      eyebrow: isSetup ? "Dashboard Access" : "Password Reset",
+      preheader: isSetup
+        ? "Your purchase is confirmed. Set your password to open your creator dashboard."
+        : "Use this secure link to choose a new password for your creator dashboard.",
+      headline: isSetup
+        ? `${firstName}, your dashboard is ready`
+        : `${firstName}, reset your password`,
+      bodyHtml: isSetup
+        ? `
+        <p style="margin:0 0 18px;">Thank you for purchasing the <strong style="color:${PALETTE.charcoal};">40-Day Creator Development Plan</strong>.</p>
+        <p style="margin:0 0 18px;">Your account has been created with this email. Click below to set your password, then you can sign in anytime.</p>
+        <p style="margin:0;">This link expires shortly for your security. After you set a password, return to sign in whenever you need your dashboard.</p>
+      `
+        : `
+        <p style="margin:0 0 18px;">We received a request to reset the password for your ${SITE_NAME} creator dashboard.</p>
+        <p style="margin:0 0 18px;">Click below to choose a new password. If you did not request this, you can ignore this email.</p>
+        <p style="margin:0;">This link expires shortly for your security.</p>
+      `,
+      ctaLabel: isSetup ? "Set Your Password" : "Choose New Password",
+      ctaUrl: params.actionUrl,
+      secondaryCtaLabel: "Sign In",
+      secondaryCtaUrl: params.loginUrl,
     }),
   };
 }
