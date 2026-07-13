@@ -13,38 +13,39 @@ export async function GET(request: Request) {
   }
 
   const options = adminQueryOptionsFromRequest(request);
-  const customers = await getAdminCustomers(options);
+  const url = new URL(request.url);
+  const tag = url.searchParams.get("tag") ?? undefined;
+  const customers = await getAdminCustomers({ ...options, tag });
+
   return csvResponse(
-    "ivara-hous-customers.csv",
+    "ivara-hous-customer-progress.csv",
     [
       "Name",
       "Email",
+      "Product",
       "Purchase Date",
       "Amount Paid",
-      "Plan Status",
-      "Progress %",
       "Current Day",
-      "Health",
+      "Completion %",
       "Status",
+      "Health",
+      "Last Active",
       "Tags",
       "Source",
-      "Last Login",
-      "Email Status",
     ],
     customers.map((row) => [
       row.name,
       row.email,
+      row.productSlug,
       formatDate(row.purchaseDate),
       row.amountPaidCents != null ? formatCurrency(row.amountPaidCents) : "",
-      row.planStatus ?? "",
-      row.progressPercent != null ? formatPercent(row.progressPercent, 0) : "",
       row.currentDay ?? "",
-      row.health,
+      row.progressPercent != null ? formatPercent(row.progressPercent, 0) : "",
       row.lifecycleStatus,
+      row.health,
+      row.lastActiveAt ?? "",
       row.tags.join(" | "),
       row.source,
-      row.lastLogin ?? "",
-      row.emailStatus,
     ])
   );
 }

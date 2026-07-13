@@ -3,6 +3,7 @@
 import { useRouter, useSearchParams } from "next/navigation";
 import { ROUTES } from "@/lib/constants";
 import type { AdminCustomerFilter } from "@/lib/admin/admin-types";
+import { SUGGESTED_CUSTOMER_TAGS } from "@/lib/admin/admin-products";
 
 const FILTERS: Array<{ value: AdminCustomerFilter; label: string }> = [
   { value: "all", label: "All" },
@@ -23,22 +24,21 @@ export function AdminCustomerFilters() {
   const searchParams = useSearchParams();
   const currentQuery = searchParams.get("q") ?? "";
   const currentFilter = (searchParams.get("filter") as AdminCustomerFilter) ?? "all";
+  const currentTag = searchParams.get("tag") ?? "";
 
-  function updateParams(next: { q?: string; filter?: string }) {
+  function updateParams(next: { q?: string; filter?: string; tag?: string }) {
     const params = new URLSearchParams(searchParams.toString());
     if (next.q !== undefined) {
-      if (next.q) {
-        params.set("q", next.q);
-      } else {
-        params.delete("q");
-      }
+      if (next.q) params.set("q", next.q);
+      else params.delete("q");
     }
     if (next.filter !== undefined) {
-      if (next.filter && next.filter !== "all") {
-        params.set("filter", next.filter);
-      } else {
-        params.delete("filter");
-      }
+      if (next.filter && next.filter !== "all") params.set("filter", next.filter);
+      else params.delete("filter");
+    }
+    if (next.tag !== undefined) {
+      if (next.tag) params.set("tag", next.tag);
+      else params.delete("tag");
     }
     const query = params.toString();
     router.push(query ? `${ROUTES.adminCustomers}?${query}` : ROUTES.adminCustomers);
@@ -54,7 +54,7 @@ export function AdminCustomerFilters() {
           id="customer-search"
           type="search"
           defaultValue={currentQuery}
-          placeholder="Name or email"
+          placeholder="Name, email, or tag"
           className="luxury-input w-full"
           onKeyDown={(event) => {
             if (event.key === "Enter") {
@@ -78,6 +78,36 @@ export function AdminCustomerFilters() {
             {filter.label}
           </button>
         ))}
+      </div>
+      <div>
+        <p className="luxury-label mb-2 text-gray-muted">Tags</p>
+        <div className="flex flex-wrap gap-2">
+          <button
+            type="button"
+            onClick={() => updateParams({ tag: "" })}
+            className={`border px-3 py-2 font-sans text-xs uppercase tracking-nav ${
+              !currentTag
+                ? "border-black bg-black text-white"
+                : "border-black/20 text-gray-mid hover:border-black hover:text-black"
+            }`}
+          >
+            All Tags
+          </button>
+          {SUGGESTED_CUSTOMER_TAGS.map((tag) => (
+            <button
+              key={tag}
+              type="button"
+              onClick={() => updateParams({ tag })}
+              className={`border px-3 py-2 font-sans text-xs uppercase tracking-nav ${
+                currentTag === tag
+                  ? "border-black bg-black text-white"
+                  : "border-black/20 text-gray-mid hover:border-black hover:text-black"
+              }`}
+            >
+              {tag}
+            </button>
+          ))}
+        </div>
       </div>
     </div>
   );

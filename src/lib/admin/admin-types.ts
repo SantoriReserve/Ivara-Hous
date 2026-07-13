@@ -55,6 +55,8 @@ export type AdminCustomerRow = {
   health: CustomerHealth;
   assessmentScore: number | null;
   source: CustomerAcquisitionSource;
+  tags: string[];
+  productSlug: string;
 };
 
 export type AdminCustomerPurchaseSummary = {
@@ -74,12 +76,27 @@ export type AdminActivityTimelineEvent = {
   detail?: string;
 };
 
+export type AdminCustomerSnapshot = {
+  health: CustomerHealth;
+  currentStage: string | null;
+  daysSincePurchase: number | null;
+  daysSinceLastLogin: number | null;
+  lifetimeValueCents: number;
+  currentDay: number | null;
+  completionPercent: number | null;
+  lastCompletedTask: string | null;
+  nextRecommendedAction: string;
+  productSlug: string;
+  productName: string;
+};
+
 export type AdminCustomerDetail = {
   customerKey: string;
   name: string;
   email: string;
   userId: string | null;
   purchaseId: string | null;
+  productSlug: string;
   joinDate: string | null;
   purchaseDate: string | null;
   amountPaidCents: number | null;
@@ -95,11 +112,29 @@ export type AdminCustomerDetail = {
   consecutiveDaysActive: number;
   lastLogin: string | null;
   lastDashboardActivity: string | null;
+  lastCompletedTask: string | null;
   lifecycleStatus: CustomerLifecycleStatus;
   health: CustomerHealth;
   assessmentScore: number | null;
   source: CustomerAcquisitionSource;
   assessment: AssessmentRecord | null;
+  snapshot: AdminCustomerSnapshot;
+  assessmentInsights: {
+    overallScore: number | null;
+    topStrengths: string[];
+    improvementAreas: string[];
+    recommendedFocus: string[];
+    recommendedResources: string[];
+    currentStage: string | null;
+    nextAction: string | null;
+  };
+  notes: Array<{
+    id: string;
+    body: string;
+    createdBy: string;
+    createdAt: string;
+  }>;
+  tags: string[];
   content: {
     planned: number;
     filmed: number;
@@ -116,6 +151,27 @@ export type AdminCustomerDetail = {
   emails: EmailDeliveryRecord[];
   allPurchases: AdminCustomerPurchaseSummary[];
   timeline: AdminActivityTimelineEvent[];
+};
+
+export type AdminNotificationItem = {
+  id: string;
+  severity: "info" | "success" | "warning" | "critical";
+  title: string;
+  detail: string;
+  occurredAt: string;
+  href?: string;
+};
+
+export type AdminTrendAnalytics = {
+  revenueTrend: AdminTimeSeriesPoint[];
+  purchasesByDay: AdminTimeSeriesPoint[];
+  purchasesByWeek: AdminTimeSeriesPoint[];
+  purchasesByMonth: AdminTimeSeriesPoint[];
+  assessmentTrend: AdminTimeSeriesPoint[];
+  averageCompletionRate: number;
+  averageDaysToFinish: number | null;
+  retentionActiveRate: number;
+  atRiskCount: number;
 };
 
 export type AdminQueryOptions = {

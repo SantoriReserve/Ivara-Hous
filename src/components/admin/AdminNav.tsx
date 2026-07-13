@@ -10,6 +10,7 @@ const ADMIN_NAV = [
   { href: ROUTES.adminCustomers, label: "Plan Customers" },
   { href: ROUTES.adminRevenue, label: "Revenue" },
   { href: ROUTES.adminConversion, label: "Conversion" },
+  { href: ROUTES.adminAnalytics, label: "Analytics" },
   { href: ROUTES.adminEmails, label: "Email Center" },
   { href: ROUTES.adminAssessments, label: "Assessments" },
   { href: ROUTES.adminPlans, label: "Plan Analytics" },

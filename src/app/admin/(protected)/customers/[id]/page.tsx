@@ -1,6 +1,13 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { AdminCustomerQuickActions } from "@/components/admin/AdminCustomerQuickActions";
+import {
+  AdminCustomerNotesPanel,
+  AdminCustomerTagsPanel,
+} from "@/components/admin/AdminCustomerCrmPanels";
+import { AdminCustomerSnapshot } from "@/components/admin/AdminCustomerSnapshot";
+import { AdminDayProgressTracker } from "@/components/admin/AdminDayProgressTracker";
+import { AdminEmailHistorySection } from "@/components/admin/AdminEmailHistorySection";
 import { AdminPageHeader } from "@/components/admin/AdminPageHeader";
 import {
   AdminHealthBadge,
@@ -37,6 +44,7 @@ export default async function AdminCustomerProfilePage({
   }
 
   const assessment = customer.assessment;
+  const insights = customer.assessmentInsights;
 
   return (
     <div className="space-y-10">
@@ -62,13 +70,119 @@ export default async function AdminCustomerProfilePage({
         <AdminLifecycleBadge status={customer.lifecycleStatus} />
         <AdminHealthBadge health={customer.health} />
         <AdminSourceBadge source={customer.source} />
+        {customer.tags.map((tag) => (
+          <span
+            key={tag}
+            className="border border-black/15 px-2 py-1 font-sans text-xs uppercase tracking-nav text-gray-mid"
+          >
+            {tag}
+          </span>
+        ))}
       </div>
+
+      <AdminCustomerSnapshot snapshot={customer.snapshot} />
 
       <AdminCustomerQuickActions
         customerKey={customer.customerKey}
         email={customer.email}
         assessmentId={assessment?.assessmentId ?? null}
       />
+
+      <div className="grid gap-6 lg:grid-cols-2">
+        <AdminDayProgressTracker currentDay={customer.currentDay} />
+        <section className="border border-black/10 p-6">
+          <h3 className="font-serif text-2xl text-black">Progress Summary</h3>
+          <div className="mt-4 grid gap-3 sm:grid-cols-2">
+            {[
+              ["Tasks Completed", String(customer.tasksCompleted)],
+              ["Tasks Remaining", String(customer.tasksRemaining)],
+              ["Tasks Skipped", String(customer.tasksSkipped)],
+              ["Consecutive Days", String(customer.consecutiveDaysActive)],
+              ["Last Login", formatDateTime(customer.lastLogin)],
+              ["Last Activity", formatDateTime(customer.lastDashboardActivity)],
+            ].map(([label, value]) => (
+              <div key={label} className="border border-black/10 p-3">
+                <p className="luxury-label mb-1 text-gray-muted">{label}</p>
+                <p className="font-sans text-sm text-black">{value}</p>
+              </div>
+            ))}
+          </div>
+        </section>
+      </div>
+
+      <div className="grid gap-6 lg:grid-cols-2">
+        <AdminCustomerNotesPanel customerKey={customer.customerKey} notes={customer.notes} />
+        <AdminCustomerTagsPanel customerKey={customer.customerKey} tags={customer.tags} />
+      </div>
+
+      <section className="space-y-4 border border-black/10 p-6">
+        <h3 className="font-serif text-2xl text-black">Assessment Insights</h3>
+        {assessment ? (
+          <>
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+              <div className="border border-black/10 p-4">
+                <p className="luxury-label mb-2 text-gray-muted">Overall Score</p>
+                <p className="font-serif text-3xl">
+                  {insights.overallScore != null ? insights.overallScore : "—"}
+                </p>
+              </div>
+              <div className="border border-black/10 p-4 sm:col-span-1 lg:col-span-3">
+                <p className="luxury-label mb-2 text-gray-muted">Recommended Focus</p>
+                <p className="font-sans text-sm text-black">
+                  {insights.nextAction || "—"}
+                </p>
+              </div>
+            </div>
+            <div className="grid gap-6 md:grid-cols-3">
+              <div>
+                <p className="luxury-label mb-3 text-gray-muted">Top Strengths</p>
+                <ul className="space-y-2">
+                  {insights.topStrengths.map((item) => (
+                    <li key={item} className="font-sans text-sm text-black">
+                      {item}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+              <div>
+                <p className="luxury-label mb-3 text-gray-muted">Biggest Improvement Areas</p>
+                <ul className="space-y-2">
+                  {insights.improvementAreas.map((item) => (
+                    <li key={item} className="font-sans text-sm text-black">
+                      {item}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+              <div>
+                <p className="luxury-label mb-3 text-gray-muted">Recommended Resources</p>
+                <ul className="space-y-2">
+                  {insights.recommendedResources.map((item) => (
+                    <li key={item} className="font-sans text-sm text-black">
+                      {item}
+                    </li>
+                  ))}
+                  {insights.recommendedFocus.slice(0, 3).map((item) => (
+                    <li key={`focus-${item}`} className="font-sans text-sm text-gray-mid">
+                      Focus: {item}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+            <Link
+              href={`/admin/assessments/${assessment.assessmentId}`}
+              className="inline-block font-sans text-xs uppercase tracking-nav text-gray-mid hover:text-black"
+            >
+              Open Full Assessment →
+            </Link>
+          </>
+        ) : (
+          <p className="font-sans text-sm text-gray-mid">
+            No linked free assessment for this purchase.
+          </p>
+        )}
+      </section>
 
       <section className="space-y-4 border border-black/10 p-6">
         <h3 className="font-serif text-2xl text-black">Overview</h3>
@@ -145,104 +259,13 @@ export default async function AdminCustomerProfilePage({
         </section>
       ) : null}
 
-      <section className="space-y-4 border border-black/10 p-6">
-        <h3 className="font-serif text-2xl text-black">Progress</h3>
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          {[
-            [
-              "Current Day",
-              customer.currentDay != null ? `Day ${customer.currentDay}/40` : "—",
-            ],
-            [
-              "Overall Progress",
-              customer.progressPercent != null
-                ? formatPercent(customer.progressPercent, 0)
-                : "—",
-            ],
-            ["Tasks Completed", String(customer.tasksCompleted)],
-            ["Tasks Remaining", String(customer.tasksRemaining)],
-            ["Tasks Skipped", String(customer.tasksSkipped)],
-            ["Consecutive Days Active", String(customer.consecutiveDaysActive)],
-            ["Last Login", formatDateTime(customer.lastLogin)],
-            ["Last Activity", formatDateTime(customer.lastDashboardActivity)],
-          ].map(([label, value]) => (
-            <div key={label} className="border border-black/10 p-4">
-              <p className="luxury-label mb-2 text-gray-muted">{label}</p>
-              <p className="font-sans text-sm text-black">{value}</p>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      {assessment ? (
-        <section className="space-y-4 border border-black/10 p-6">
-          <div className="flex items-center justify-between gap-4">
-            <h3 className="font-serif text-2xl text-black">Assessment</h3>
-            <Link
-              href={`/admin/assessments/${assessment.assessmentId}`}
-              className="font-sans text-xs uppercase tracking-nav text-gray-mid hover:text-black"
-            >
-              Open Full Assessment
-            </Link>
-          </div>
-          <div className="grid gap-4 md:grid-cols-2">
-            <div>
-              <p className="luxury-label mb-2 text-gray-muted">Creator Stage</p>
-              <p className="font-sans text-sm">{assessment.analysis.preview.currentCreatorStage}</p>
-            </div>
-            <div>
-              <p className="luxury-label mb-2 text-gray-muted">Recommended Path</p>
-              <p className="font-sans text-sm">
-                {assessment.analysis.preview.recommendedNextStep ||
-                  assessment.analysis.preview.creatorArchetype}
-              </p>
-            </div>
-            <div>
-              <p className="luxury-label mb-2 text-gray-muted">Average Score</p>
-              <p className="font-serif text-2xl">
-                {customer.assessmentScore != null ? customer.assessmentScore : "—"}
-              </p>
-            </div>
-            <div>
-              <p className="luxury-label mb-2 text-gray-muted">Biggest Challenge</p>
-              <p className="font-sans text-sm">{assessment.answers.biggestChallenge || "—"}</p>
-            </div>
-          </div>
-          <div className="grid gap-3 sm:grid-cols-5">
-            {Object.entries(assessment.analysis.scores).map(([key, score]) => (
-              <div key={key} className="border border-black/10 p-3">
-                <p className="font-sans text-xs uppercase tracking-nav text-gray-muted">{key}</p>
-                <p className="mt-1 font-serif text-xl">{score}</p>
-              </div>
-            ))}
-          </div>
-          <details className="border border-black/10 p-4">
-            <summary className="cursor-pointer font-sans text-sm text-black">
-              Assessment Answers
-            </summary>
-            <dl className="mt-4 space-y-3">
-              {Object.entries(assessment.answers).map(([key, value]) => (
-                <div key={key}>
-                  <dt className="luxury-label text-gray-muted">{key}</dt>
-                  <dd className="mt-1 font-sans text-sm text-black">
-                    {String(value || "—")}
-                  </dd>
-                </div>
-              ))}
-            </dl>
-          </details>
-        </section>
-      ) : (
-        <section className="border border-black/10 p-6">
-          <h3 className="font-serif text-2xl text-black">Assessment</h3>
-          <p className="mt-3 font-sans text-sm text-gray-mid">
-            No linked free assessment for this purchase.
-          </p>
-        </section>
-      )}
+      <AdminEmailHistorySection emails={customer.emails} />
 
       <section id="activity-timeline" className="space-y-4 border border-black/10 p-6">
-        <h3 className="font-serif text-2xl text-black">Activity Timeline</h3>
+        <h3 className="font-serif text-2xl text-black">Customer Journey</h3>
+        <p className="font-sans text-sm text-gray-mid">
+          Chronological timeline across assessment, purchase, access, and plan progress.
+        </p>
         {customer.timeline.length ? (
           <ol className="space-y-0">
             {customer.timeline.map((event) => (
@@ -263,73 +286,7 @@ export default async function AdminCustomerProfilePage({
             ))}
           </ol>
         ) : (
-          <p className="font-sans text-sm text-gray-mid">No activity recorded yet.</p>
-        )}
-      </section>
-
-      <section className="space-y-4 border border-black/10 p-6">
-        <h3 className="font-serif text-2xl text-black">Content Tracking</h3>
-        <div className="grid gap-4 sm:grid-cols-4">
-          {[
-            ["Planned", customer.content.planned],
-            ["Filmed", customer.content.filmed],
-            ["Edited", customer.content.edited],
-            ["Posted", customer.content.posted],
-          ].map(([label, value]) => (
-            <div key={label} className="border border-black/10 p-4">
-              <p className="luxury-label mb-2 text-gray-muted">{label}</p>
-              <p className="font-serif text-2xl">{value}</p>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      <section className="space-y-4 border border-black/10 p-6">
-        <h3 className="font-serif text-2xl text-black">Learning Insights</h3>
-        {customer.learningInsights.length ? (
-          <div className="space-y-4">
-            {customer.learningInsights.map((insight) => (
-              <div key={insight.id} className="border border-black/10 p-4">
-                <p className="font-sans text-xs uppercase tracking-nav text-gray-muted">
-                  Day {insight.dayNumber} · {formatDateTime(insight.createdAt)}
-                </p>
-                <p className="mt-2 font-sans text-sm text-gray-mid">{insight.prompt}</p>
-                <p className="mt-2 font-sans text-sm text-black">{insight.response}</p>
-              </div>
-            ))}
-          </div>
-        ) : (
-          <p className="font-sans text-sm text-gray-mid">No learning insight responses yet.</p>
-        )}
-      </section>
-
-      <section className="space-y-4 border border-black/10 p-6">
-        <h3 className="font-serif text-2xl text-black">Email Delivery History</h3>
-        {customer.emails.length ? (
-          <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-black/10">
-              <thead>
-                <tr className="text-left font-sans text-xs uppercase tracking-nav text-gray-muted">
-                  <th className="px-3 py-2">Type</th>
-                  <th className="px-3 py-2">Status</th>
-                  <th className="px-3 py-2">Sent</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-black/10">
-                {customer.emails.map((email) => (
-                  <tr key={email.id}>
-                    <td className="px-3 py-2 font-sans text-sm">{email.emailType}</td>
-                    <td className="px-3 py-2 font-sans text-sm">{email.status}</td>
-                    <td className="px-3 py-2 font-sans text-sm">
-                      {formatDateTime(email.createdAt)}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        ) : (
-          <p className="font-sans text-sm text-gray-mid">No emails recorded yet.</p>
+          <p className="font-sans text-sm text-gray-mid">No journey events yet.</p>
         )}
       </section>
     </div>

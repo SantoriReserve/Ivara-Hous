@@ -20,27 +20,44 @@ import { parseIncludeTestData } from "@/lib/admin/admin-test-data";
 import type { AdminCustomerFilter, AdminCustomerRow } from "@/lib/admin/admin-types";
 
 type CustomersPageProps = {
-  searchParams: Promise<{ q?: string; filter?: string; includeTestData?: string }>;
+  searchParams: Promise<{
+    q?: string;
+    filter?: string;
+    tag?: string;
+    includeTestData?: string;
+  }>;
 };
 
 export default async function AdminCustomersPage({ searchParams }: CustomersPageProps) {
   const params = await searchParams;
   const filter = (params.filter as AdminCustomerFilter | undefined) ?? "all";
   const includeTestData = parseIncludeTestData(params.includeTestData);
-  const customers = await getAdminCustomers({ query: params.q, filter, includeTestData });
+  const customers = await getAdminCustomers({
+    query: params.q,
+    filter,
+    tag: params.tag,
+    includeTestData,
+  });
 
   return (
     <div className="space-y-8">
       <AdminPageHeader
         eyebrow="Plan Customers"
         title="Creator Plan Customers"
-        description="Everyone who purchased the 40-Day Creator Development Plan — progress, health, and acquisition source in one portfolio."
+        description="Who are my customers, how are they progressing, and who needs attention — instantly."
         actions={
-          <AdminExportLink
-            href="/api/admin/export/customers"
-            label="Export CSV"
-            includeTestData={includeTestData}
-          />
+          <>
+            <AdminExportLink
+              href="/api/admin/export/customers"
+              label="Customers CSV"
+              includeTestData={includeTestData}
+            />
+            <AdminExportLink
+              href="/api/admin/export/progress"
+              label="Progress CSV"
+              includeTestData={includeTestData}
+            />
+          </>
         }
       />
 
@@ -105,6 +122,16 @@ export default async function AdminCustomersPage({ searchParams }: CustomersPage
             key: "health",
             header: "Health",
             render: (row) => <AdminHealthBadge health={row.health} />,
+          },
+          {
+            key: "tags",
+            header: "Tags",
+            render: (row) =>
+              row.tags.length ? (
+                <span className="font-sans text-xs text-gray-mid">{row.tags.join(" · ")}</span>
+              ) : (
+                "—"
+              ),
           },
           {
             key: "score",

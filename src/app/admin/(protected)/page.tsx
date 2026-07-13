@@ -2,9 +2,13 @@ import { AdminBarChart } from "@/components/admin/AdminBarChart";
 import { AdminDistributionChart } from "@/components/admin/AdminDistributionChart";
 import { AdminExportLink } from "@/components/admin/AdminExportLink";
 import { AdminMetricGrid } from "@/components/admin/AdminMetricGrid";
+import { AdminNotificationCenter } from "@/components/admin/AdminNotificationCenter";
 import { AdminPageHeader } from "@/components/admin/AdminPageHeader";
 import { formatCurrency, formatPercent } from "@/lib/admin/admin-format";
-import { getAdminOverviewMetrics } from "@/lib/admin/admin-repository";
+import {
+  getAdminNotifications,
+  getAdminOverviewMetrics,
+} from "@/lib/admin/admin-repository";
 import { parseIncludeTestData } from "@/lib/admin/admin-test-data";
 import { ROUTES } from "@/lib/constants";
 
@@ -26,14 +30,17 @@ function withTest(path: string, includeTestData: boolean, extra = "") {
 export default async function AdminHomePage({ searchParams }: AdminHomePageProps) {
   const params = await searchParams;
   const includeTestData = parseIncludeTestData(params.includeTestData);
-  const metrics = await getAdminOverviewMetrics({ includeTestData });
+  const [metrics, notifications] = await Promise.all([
+    getAdminOverviewMetrics({ includeTestData }),
+    getAdminNotifications({ includeTestData }),
+  ]);
 
   return (
     <div className="space-y-10">
       <AdminPageHeader
         eyebrow="Executive Overview"
         title="Business Command Center"
-        description="Run Ivara Hous from one place — customers, revenue, plans, assessments, and communications."
+        description="Understand customers and business health in seconds — then drill into the signal that matters."
         actions={
           <>
             <AdminExportLink
@@ -43,12 +50,19 @@ export default async function AdminHomePage({ searchParams }: AdminHomePageProps
             />
             <AdminExportLink
               href="/api/admin/export/purchases"
-              label="Export Purchases"
+              label="Export Revenue"
+              includeTestData={includeTestData}
+            />
+            <AdminExportLink
+              href="/api/admin/export/progress"
+              label="Export Progress"
               includeTestData={includeTestData}
             />
           </>
         }
       />
+
+      <AdminNotificationCenter notifications={notifications} />
 
       <AdminMetricGrid
         metrics={[
@@ -95,12 +109,12 @@ export default async function AdminHomePage({ searchParams }: AdminHomePageProps
           {
             label: "Avg Plan Completion",
             value: formatPercent(metrics.averagePlanCompletion, 1),
-            href: withTest(ROUTES.adminPlans, includeTestData),
+            href: withTest(ROUTES.adminAnalytics, includeTestData),
           },
           {
             label: "Avg Current Day",
             value: metrics.averageCurrentDay.toFixed(1),
-            href: withTest(ROUTES.adminPlans, includeTestData),
+            href: withTest(ROUTES.adminAnalytics, includeTestData),
           },
           {
             label: "New Customers (7d)",

@@ -16,7 +16,15 @@ import {
   resolveCustomerHealth,
   resolveCustomerSource,
   resolveLifecycleStatus,
+  daysSince,
 } from "@/lib/admin/customer-health";
+import { getAdminProduct } from "@/lib/admin/admin-products";
+import { getTagsByCustomerKeys, listCustomerNotes, listCustomerTags } from "@/lib/admin/customer-crm-repository";
+import {
+  buildAssessmentInsights,
+  enrichCustomerJourney,
+  resolveNextRecommendedAction,
+} from "@/lib/admin/customer-insights";
 import type {
   AdminActivityMetrics,
   AdminActivityTimelineEvent,
@@ -27,11 +35,13 @@ import type {
   AdminCustomerPurchaseSummary,
   AdminCustomerRow,
   AdminDistributionBucket,
+  AdminNotificationItem,
   AdminOverviewMetrics,
   AdminPlanAnalytics,
   AdminQueryOptions,
   AdminRevenueMetrics,
   AdminTimeSeriesPoint,
+  AdminTrendAnalytics,
 } from "@/lib/admin/admin-types";
 import type { EmailDeliveryRecord } from "@/lib/email/email-delivery-repository";
 
@@ -44,6 +54,7 @@ type PurchaseRow = {
   currency: string;
   status: string;
   purchased_at: string;
+  product_slug?: string;
 };
 
 type PlanRow = {
@@ -216,7 +227,9 @@ async function getCompletedPurchases(): Promise<PurchaseRow[]> {
   const supabase = getSupabaseAdmin();
   const { data, error } = await supabase
     .from("purchases")
-    .select("id, user_id, assessment_id, customer_email, amount_cents, currency, status, purchased_at")
+    .select(
+      "id, user_id, assessment_id, customer_email, amount_cents, currency, status, purchased_at, product_slug"
+    )
     .eq("status", "completed")
     .order("purchased_at", { ascending: false });
 
@@ -438,10 +451,12 @@ export async function getAdminOverviewMetrics(
 export async function getAdminCustomers(params?: {
   query?: string;
   filter?: AdminCustomerFilter;
+  tag?: string;
   includeTestData?: boolean;
 }): Promise<AdminCustomerRow[]> {
   const query = params?.query?.trim().toLowerCase() ?? "";
   const filter = params?.filter ?? "all";
+  const tagFilter = params?.tag?.trim().toLowerCase() ?? "";
   const scope = toScope({ includeTestData: params?.includeTestData });
 
   const supabase = getSupabaseAdmin();
@@ -478,7 +493,7 @@ export async function getAdminCustomers(params?: {
     (a, b) => new Date(b.purchased_at).getTime() - new Date(a.purchased_at).getTime()
   );
 
-  const rows: AdminCustomerRow[] = sortedPurchases.map((purchase) => {
+  const draftRows = sortedPurchases.map((purchase) => {
     const plan = plansByPurchase.get(purchase.id);
     const profile = purchase.user_id ? profiles.get(purchase.user_id) : undefined;
     const auth = purchase.user_id ? authUsers.get(purchase.user_id) : undefined;
@@ -493,6 +508,7 @@ export async function getAdminCustomers(params?: {
     const emailKey = purchase.customer_email.toLowerCase();
     const purchaseNumber = (purchaseIndexByEmail.get(emailKey) ?? 0) + 1;
     purchaseIndexByEmail.set(emailKey, purchaseNumber);
+    const customerKey = buildCustomerKey(purchase.user_id, purchase.id);
 
     const lastActiveAt = latestTimestamp(auth?.lastLogin, plan?.updated_at, plan?.completed_at);
     const source = resolveCustomerSource(Boolean(purchase.assessment_id));
@@ -507,9 +523,10 @@ export async function getAdminCustomers(params?: {
       progressPercent: plan?.completion_percentage ?? null,
       purchaseDate: purchase.purchased_at,
     });
+    const product = getAdminProduct(purchase.product_slug);
 
     return {
-      customerKey: buildCustomerKey(purchase.user_id, purchase.id),
+      customerKey,
       name,
       email: purchase.customer_email,
       purchaseDate: purchase.purchased_at,
@@ -530,15 +547,26 @@ export async function getAdminCustomers(params?: {
         assessment?.analysis as AssessmentRecord["analysis"] | undefined
       ),
       source,
+      tags: [] as string[],
+      productSlug: product.slug,
     };
   });
+
+  const tagsByKey = await getTagsByCustomerKeys(draftRows.map((row) => row.customerKey));
+  const rows: AdminCustomerRow[] = draftRows.map((row) => ({
+    ...row,
+    tags: tagsByKey.get(row.customerKey) ?? [],
+  }));
 
   return rows.filter((row) => {
     const matchesQuery =
       !query ||
       row.name.toLowerCase().includes(query) ||
-      row.email.toLowerCase().includes(query);
-    return matchesQuery && matchesCustomerFilter(filter, row);
+      row.email.toLowerCase().includes(query) ||
+      row.tags.some((tag) => tag.toLowerCase().includes(query));
+    const matchesTag =
+      !tagFilter || row.tags.some((tag) => tag.toLowerCase() === tagFilter);
+    return matchesQuery && matchesTag && matchesCustomerFilter(filter, row);
   });
 }
 
@@ -556,14 +584,14 @@ export async function getAdminCustomerDetail(
   if (purchaseId) {
     const { data } = await supabase
       .from("purchases")
-      .select("id, user_id, assessment_id, customer_email, amount_cents, purchased_at, status")
+      .select("id, user_id, assessment_id, customer_email, amount_cents, purchased_at, status, product_slug")
       .eq("id", purchaseId)
       .maybeSingle();
     purchase = (data as PurchaseRow | null) ?? null;
     if (purchase) {
       const { data: siblings } = await supabase
         .from("purchases")
-        .select("id, user_id, assessment_id, customer_email, amount_cents, purchased_at, status")
+        .select("id, user_id, assessment_id, customer_email, amount_cents, purchased_at, status, product_slug")
         .eq("customer_email", purchase.customer_email)
         .eq("status", "completed")
         .order("purchased_at", { ascending: false });
@@ -572,7 +600,7 @@ export async function getAdminCustomerDetail(
   } else if (userId) {
     const { data } = await supabase
       .from("purchases")
-      .select("id, user_id, assessment_id, customer_email, amount_cents, purchased_at, status")
+      .select("id, user_id, assessment_id, customer_email, amount_cents, purchased_at, status, product_slug")
       .eq("user_id", userId)
       .eq("status", "completed")
       .order("purchased_at", { ascending: false });
@@ -629,6 +657,7 @@ export async function getAdminCustomerDetail(
   };
 
   let lastDashboardActivity: string | null = null;
+  let lastCompletedTask: string | null = null;
   let tasksSkipped = 0;
   let consecutiveDaysActive = 0;
   const completionEvents: AdminActivityTimelineEvent[] = [];
@@ -646,15 +675,45 @@ export async function getAdminCustomerDetail(
     lastDashboardActivity = latest?.completed_at ?? latest?.updated_at ?? plan?.updated_at ?? null;
     tasksSkipped = rows.filter((row) => row.status === "skipped").length;
 
+    const latestCompleted = rows.find((row) => row.status === "completed");
+    if (latestCompleted?.plan_day_task_id) {
+      const { data: taskRow } = await supabase
+        .from("plan_day_tasks")
+        .select("title, plan_day_id")
+        .eq("id", latestCompleted.plan_day_task_id)
+        .maybeSingle();
+      if (taskRow) {
+        let dayNumber: number | null = null;
+        if (taskRow.plan_day_id) {
+          const { data: dayRow } = await supabase
+            .from("plan_days")
+            .select("day_number")
+            .eq("id", taskRow.plan_day_id)
+            .maybeSingle();
+          dayNumber = dayRow?.day_number ?? null;
+        }
+        lastCompletedTask =
+          dayNumber != null ? `Day ${dayNumber}: ${taskRow.title}` : String(taskRow.title);
+        completionEvents.push({
+          id: `completion-named-${latestCompleted.id}`,
+          occurredAt: latestCompleted.completed_at ?? latestCompleted.updated_at,
+          label: `Completed ${taskRow.title}`,
+          detail: dayNumber != null ? `Day ${dayNumber}` : undefined,
+        });
+      }
+    }
+
     const dayKeys = new Set<string>();
     for (const row of rows) {
       const stamp = row.completed_at ?? row.updated_at;
       if (!stamp) continue;
       dayKeys.add(toDateKey(stamp));
+      const dayLabel =
+        row.status === "skipped" ? "Skipped Task" : "Completed Task";
       completionEvents.push({
         id: `completion-${row.id}`,
         occurredAt: stamp,
-        label: row.status === "skipped" ? "Skipped Task" : "Completed Task",
+        label: dayLabel,
         detail: row.status === "completed" ? "Required plan task completed" : "Task marked skipped",
       });
     }
@@ -664,7 +723,6 @@ export async function getAdminCustomerDetail(
     for (let i = 0; i < 40; i += 1) {
       const key = cursor.toISOString().slice(0, 10);
       if (i === 0 && key !== todayKey && !dayKeys.has(key)) {
-        // allow streak to start from yesterday if nothing today
         cursor.setDate(cursor.getDate() - 1);
         continue;
       }
@@ -678,16 +736,24 @@ export async function getAdminCustomerDetail(
     lastDashboardActivity = plan?.updated_at ?? null;
   }
 
-  const customerEmails = filterEmailRecipient(
-    deliveries.filter(
-      (delivery) =>
-        delivery.purchaseId === purchase.id ||
-        relatedPurchases.some((row) => row.id === delivery.purchaseId) ||
-        (resolvedUserId && delivery.userId === resolvedUserId) ||
-        delivery.recipientEmail.toLowerCase() === purchase.customer_email.toLowerCase()
+  const resolvedCustomerKey = buildCustomerKey(resolvedUserId, purchase.id);
+  const [customerEmailsRaw, notes, tagRows] = await Promise.all([
+    Promise.resolve(
+      filterEmailRecipient(
+        deliveries.filter(
+          (delivery) =>
+            delivery.purchaseId === purchase.id ||
+            relatedPurchases.some((row) => row.id === delivery.purchaseId) ||
+            (resolvedUserId && delivery.userId === resolvedUserId) ||
+            delivery.recipientEmail.toLowerCase() === purchase.customer_email.toLowerCase()
+        ),
+        scope
+      )
     ),
-    scope
-  );
+    listCustomerNotes(resolvedCustomerKey),
+    listCustomerTags(resolvedCustomerKey),
+  ]);
+  const customerEmails = customerEmailsRaw;
 
   const allPurchases: AdminCustomerPurchaseSummary[] = relatedPurchases.map((row) => {
     const relatedPlan = plans.find((planRow) => planRow.purchase_id === row.id);
@@ -715,81 +781,48 @@ export async function getAdminCustomerDetail(
     progressPercent: plan?.completion_percentage ?? null,
     purchaseDate: purchase.purchased_at,
   });
-
-  const timeline: AdminActivityTimelineEvent[] = [
-    {
-      id: `purchase-${purchase.id}`,
-      occurredAt: purchase.purchased_at,
-      label: "Purchased Creator Development Plan",
-      detail: `Payment ${purchase.status}`,
-    },
-  ];
-
-  if (assessment) {
-    timeline.push({
-      id: `assessment-${assessment.assessmentId}`,
-      occurredAt: assessment.submittedAt,
-      label: "Completed Assessment",
-      detail: assessment.analysis.preview.creatorArchetype,
-    });
-  }
-
-  if (plan) {
-    timeline.push({
-      id: `plan-start-${plan.id}`,
-      occurredAt: plan.updated_at,
-      label: plan.status === "completed" ? "Completed Program" : "Plan In Progress",
-      detail: `Day ${plan.current_focus_day}/40 · ${plan.completion_percentage}% complete`,
-    });
-    if (plan.current_focus_day >= 1) {
-      timeline.push({
-        id: `day-focus-${plan.id}`,
-        occurredAt: plan.updated_at,
-        label: `Started Day ${plan.current_focus_day}`,
-      });
-    }
-    if (plan.completed_at) {
-      timeline.push({
-        id: `plan-completed-${plan.id}`,
-        occurredAt: plan.completed_at,
-        label: "Completed 40-Day Plan",
-      });
-    }
-  }
-
-  if (auth?.lastLogin) {
-    timeline.push({
-      id: `login-${resolvedUserId}`,
-      occurredAt: auth.lastLogin,
-      label: "Logged In",
-    });
-  }
-
-  for (const email of customerEmails.slice(0, 20)) {
-    timeline.push({
-      id: `email-${email.id}`,
-      occurredAt: email.createdAt,
-      label: `Email: ${email.emailType}`,
-      detail: email.status,
-    });
-  }
-
-  timeline.push(...completionEvents.slice(0, 40));
-  timeline.sort(
-    (a, b) => new Date(b.occurredAt).getTime() - new Date(a.occurredAt).getTime()
+  const assessmentInsights = buildAssessmentInsights(assessment);
+  const nextRecommendedAction = resolveNextRecommendedAction({
+    lifecycleStatus,
+    health,
+    currentDay: plan?.current_focus_day ?? null,
+    progressPercent: plan?.completion_percentage ?? null,
+    assessmentNextStep: assessmentInsights.nextAction,
+    lastLogin: auth?.lastLogin ?? null,
+  });
+  const product = getAdminProduct(
+    (purchase as PurchaseRow & { product_slug?: string }).product_slug
   );
+  const totalRevenueCents = relatedPurchases.reduce((sum, row) => sum + row.amount_cents, 0);
+
+  const timeline = enrichCustomerJourney({
+    purchaseDate: purchase.purchased_at,
+    assessment,
+    emails: customerEmails,
+    lastLogin: auth?.lastLogin ?? null,
+    authCreatedAt: auth?.createdAt ?? null,
+    currentDay: plan?.current_focus_day ?? null,
+    planCompletedAt: plan?.completed_at ?? null,
+    completionEvents,
+    lastActiveAt,
+  });
 
   return {
-    customerKey: buildCustomerKey(resolvedUserId, purchase.id),
-    name: profile?.fullName || assessment?.answers.fullName || purchase.customer_email.split("@")[0] || "Customer",
+    customerKey: resolvedCustomerKey,
+    name:
+      profile?.fullName ||
+      assessment?.answers.fullName ||
+      purchase.customer_email.split("@")[0] ||
+      "Customer",
     email: purchase.customer_email,
     userId: resolvedUserId,
     purchaseId: purchase.id,
+    productSlug: product.slug,
     joinDate: auth?.createdAt ?? purchase.purchased_at,
     purchaseDate: purchase.purchased_at,
     amountPaidCents: purchase.amount_cents,
-    totalRevenueCents: relatedPurchases.reduce((sum, row) => sum + row.amount_cents, 0),
-    planTitle: plan?.plan_summary?.title || "40-Day Creator Development Plan",
+    totalRevenueCents,
+    planTitle: plan?.plan_summary?.title || product.name,
     planStatus: plan?.status ?? null,
     paymentStatus: purchase.status,
     progressPercent: plan?.completion_percentage ?? null,
@@ -802,11 +835,33 @@ export async function getAdminCustomerDetail(
     consecutiveDaysActive,
     lastLogin: auth?.lastLogin ?? null,
     lastDashboardActivity,
+    lastCompletedTask,
     lifecycleStatus,
     health,
-    assessmentScore: averageAssessmentScore(assessment?.analysis),
+    assessmentScore: assessmentInsights.overallScore,
     source,
     assessment,
+    snapshot: {
+      health,
+      currentStage: assessmentInsights.currentStage,
+      daysSincePurchase: daysSince(purchase.purchased_at),
+      daysSinceLastLogin: daysSince(auth?.lastLogin),
+      lifetimeValueCents: totalRevenueCents,
+      currentDay: plan?.current_focus_day ?? null,
+      completionPercent: plan?.completion_percentage ?? null,
+      lastCompletedTask,
+      nextRecommendedAction,
+      productSlug: product.slug,
+      productName: product.name,
+    },
+    assessmentInsights,
+    notes: notes.map((note) => ({
+      id: note.id,
+      body: note.body,
+      createdBy: note.createdBy,
+      createdAt: note.createdAt,
+    })),
+    tags: tagRows.map((tag) => tag.tag),
     content,
     learningInsights: (insightsRes.data ?? []).map((row) => ({
       id: row.id,
@@ -817,7 +872,7 @@ export async function getAdminCustomerDetail(
     })),
     emails: customerEmails,
     allPurchases,
-    timeline: timeline.slice(0, 60),
+    timeline: timeline.slice(0, 80),
   };
 }
 
@@ -927,6 +982,215 @@ export async function getAdminConversionMetrics(
     purchaseToActiveRate,
     activeToCompletedRate,
     overallFunnelRate,
+  };
+}
+
+export async function getAdminNotifications(
+  options?: AdminQueryOptions
+): Promise<AdminNotificationItem[]> {
+  const scope = toScope(options);
+  const supabase = getSupabaseAdmin();
+  const [customers, assessmentsRes, deliveries] = await Promise.all([
+    getAdminCustomers({ includeTestData: scope.includeTestData }),
+    supabase
+      .from("assessments")
+      .select("id, full_name, email, submitted_at")
+      .order("submitted_at", { ascending: false })
+      .limit(20),
+    listEmailDeliveries({ limit: 100 }),
+  ]);
+
+  const notifications: AdminNotificationItem[] = [];
+  const today = startOfDay(new Date());
+
+  for (const customer of customers) {
+    if (customer.purchaseDate && new Date(customer.purchaseDate) >= today) {
+      notifications.push({
+        id: `purchase-${customer.purchaseId}`,
+        severity: "success",
+        title: "New purchase today",
+        detail: `${customer.name} · ${customer.email}`,
+        occurredAt: customer.purchaseDate,
+        href: `/admin/customers/${encodeURIComponent(customer.customerKey)}`,
+      });
+    }
+    if (customer.lifecycleStatus === "completed") {
+      notifications.push({
+        id: `completed-${customer.customerKey}`,
+        severity: "success",
+        title: "Customer completed the program",
+        detail: customer.name,
+        occurredAt: customer.lastActiveAt ?? customer.purchaseDate ?? new Date().toISOString(),
+        href: `/admin/customers/${encodeURIComponent(customer.customerKey)}`,
+      });
+    }
+    if (customer.health === "at_risk") {
+      notifications.push({
+        id: `atrisk-${customer.customerKey}`,
+        severity: "critical",
+        title: "Customer hasn't logged in for 7+ days",
+        detail: customer.name,
+        occurredAt: customer.lastActiveAt ?? customer.purchaseDate ?? new Date().toISOString(),
+        href: `/admin/customers/${encodeURIComponent(customer.customerKey)}`,
+      });
+    }
+  }
+
+  for (const assessment of filterAssessments(
+    (assessmentsRes.data ?? []) as AssessmentRow[],
+    scope
+  )) {
+    if (new Date(assessment.submitted_at) >= today) {
+      notifications.push({
+        id: `assessment-${assessment.id}`,
+        severity: "info",
+        title: "Assessment completed today",
+        detail: `${assessment.full_name} · ${assessment.email}`,
+        occurredAt: assessment.submitted_at,
+        href: `/admin/assessments/${assessment.id}`,
+      });
+    }
+  }
+
+  for (const delivery of deliveries) {
+    if (
+      (delivery.emailType === "password_reset" || delivery.emailType === "account_access_setup") &&
+      new Date(delivery.createdAt) >= daysAgo(2)
+    ) {
+      notifications.push({
+        id: `reset-${delivery.id}`,
+        severity: delivery.status === "failed" ? "warning" : "info",
+        title:
+          delivery.status === "failed"
+            ? "Welcome / password email failed"
+            : "Password reset / setup requested",
+        detail: delivery.recipientEmail,
+        occurredAt: delivery.createdAt,
+      });
+    }
+    if (
+      delivery.status === "failed" &&
+      (delivery.emailType.includes("welcome") ||
+        delivery.emailType === "customer_notification" ||
+        delivery.emailType === "account_access_setup")
+    ) {
+      notifications.push({
+        id: `fail-${delivery.id}`,
+        severity: "warning",
+        title: "Welcome email failed",
+        detail: delivery.recipientEmail,
+        occurredAt: delivery.createdAt,
+      });
+    }
+  }
+
+  return notifications
+    .sort((a, b) => new Date(b.occurredAt).getTime() - new Date(a.occurredAt).getTime())
+    .slice(0, 12);
+}
+
+export async function getAdminTrendAnalytics(
+  options?: AdminQueryOptions
+): Promise<AdminTrendAnalytics> {
+  const scope = toScope(options);
+  const supabase = getSupabaseAdmin();
+  const [allPurchases, allPlans, authUsers, assessmentsRes, customers] = await Promise.all([
+    getCompletedPurchases(),
+    getPlanInstances(),
+    getAuthUserMeta(),
+    supabase.from("assessments").select("id, email, full_name, submitted_at"),
+    getAdminCustomers({ includeTestData: scope.includeTestData }),
+  ]);
+
+  const authEmailByUserId = new Map(
+    [...authUsers.entries()].map(([userId, meta]) => [userId, meta.email])
+  );
+  const testPurchaseIds = buildTestPurchaseIdSet(allPurchases);
+  const testUserIds = buildTestUserIdSet(allPurchases, authEmailByUserId);
+  const purchases = filterPurchases(allPurchases, scope);
+  const plans = filterPlans(allPlans, scope, testPurchaseIds, testUserIds);
+  const assessments = filterAssessments((assessmentsRes.data ?? []) as AssessmentRow[], scope);
+
+  const revenueTrend = buildDailySeries(
+    purchases.map((row) => ({ date: row.purchased_at, amount: row.amount_cents })),
+    30,
+    "amount"
+  );
+  const purchasesByDay = buildDailySeries(
+    purchases.map((row) => ({ date: row.purchased_at, count: 1 })),
+    30,
+    "count"
+  );
+
+  const weekMap = new Map<string, number>();
+  for (const purchase of purchases) {
+    const date = new Date(purchase.purchased_at);
+    const weekStart = startOfDay(date);
+    weekStart.setDate(weekStart.getDate() - weekStart.getDay());
+    const key = weekStart.toISOString().slice(0, 10);
+    weekMap.set(key, (weekMap.get(key) ?? 0) + 1);
+  }
+  const purchasesByWeek = [...weekMap.entries()]
+    .sort(([a], [b]) => a.localeCompare(b))
+    .slice(-12)
+    .map(([date, value]) => ({ date, value }));
+
+  const monthMap = new Map<string, number>();
+  for (const purchase of purchases) {
+    const key = toMonthKey(purchase.purchased_at);
+    monthMap.set(key, (monthMap.get(key) ?? 0) + 1);
+  }
+  const purchasesByMonth = [...monthMap.entries()]
+    .sort(([a], [b]) => a.localeCompare(b))
+    .slice(-12)
+    .map(([date, value]) => ({ date, value }));
+
+  const assessmentTrend = buildDailySeries(
+    assessments.map((row) => ({ date: row.submitted_at, count: 1 })),
+    30,
+    "count"
+  );
+
+  const averageCompletionRate =
+    plans.length > 0
+      ? plans.reduce((sum, plan) => sum + plan.completion_percentage, 0) / plans.length
+      : 0;
+
+  const finished = plans.filter((plan) => plan.status === "completed" && plan.completed_at);
+  let averageDaysToFinish: number | null = null;
+  if (finished.length) {
+    const purchaseById = new Map(purchases.map((row) => [row.id, row]));
+    const durations: number[] = [];
+    for (const plan of finished) {
+      const purchase = purchaseById.get(plan.purchase_id);
+      if (!purchase?.purchased_at || !plan.completed_at) continue;
+      const days =
+        (new Date(plan.completed_at).getTime() - new Date(purchase.purchased_at).getTime()) /
+        (1000 * 60 * 60 * 24);
+      if (days >= 0) durations.push(days);
+    }
+    if (durations.length) {
+      averageDaysToFinish =
+        durations.reduce((sum, value) => sum + value, 0) / durations.length;
+    }
+  }
+
+  const retentionActiveRate =
+    customers.length > 0
+      ? (customers.filter((row) => row.lifecycleStatus === "active").length / customers.length) *
+        100
+      : 0;
+
+  return {
+    revenueTrend,
+    purchasesByDay,
+    purchasesByWeek,
+    purchasesByMonth,
+    assessmentTrend,
+    averageCompletionRate,
+    averageDaysToFinish,
+    retentionActiveRate,
+    atRiskCount: customers.filter((row) => row.health === "at_risk").length,
   };
 }
 
